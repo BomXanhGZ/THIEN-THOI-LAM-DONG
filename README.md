@@ -15,9 +15,10 @@ Demo không cần token, không ghi lên GitHub. Tải lại trang sẽ khôi ph
 
 ## Chạy local
 
-Dùng Node.js 24.13+ trong nhánh 24.x:
+Dùng Node.js 24.13+ trong nhánh 24.x. Mở **PowerShell**, chuyển vào thư mục dự án rồi chạy:
 
-```sh
+```powershell
+cd "E:\BomXanhG-Z_File\kenlythoi-webSite"
 npm ci
 npm run dev
 ```
@@ -26,7 +27,8 @@ Mở http://localhost:5173/kenlythoi-webSite/?demo=1#/
 
 ## Kiểm tra và build
 
-```sh
+```powershell
+cd "E:\BomXanhG-Z_File\kenlythoi-webSite"
 npm test
 npm run build
 npm run preview
@@ -37,7 +39,8 @@ http://localhost:4173/kenlythoi-webSite/?demo=1#/
 
 ## Deploy
 
-```sh
+```powershell
+cd "E:\BomXanhG-Z_File\kenlythoi-webSite"
 git add .
 git commit -m "Update website demo"
 git push origin main

@@ -71,6 +71,9 @@ export default function App() {
     <div className="flex min-h-screen flex-col">
       <a href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content')?.focus(); }} className="sr-only focus:not-sr-only focus:p-3">Đến nội dung chính</a>
       <Header name={name} path={path} />
+      <div className="border-b border-orange-100 bg-orange-50 px-5 py-3 text-center text-sm text-slate-700">
+        Đang duyệt thiết kế mới cho website. <a className="font-semibold text-orange-800 underline" href={`${window.location.pathname}?demo=1#/`}>Xem bản demo và thử chỉnh sửa →</a>
+      </div>
       <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:py-12">
         {error && <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           {error}{content && ' Đang hiển thị nội dung đã tải trước đó.'}

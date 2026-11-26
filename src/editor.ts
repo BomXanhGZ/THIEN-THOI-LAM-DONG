@@ -1,4 +1,4 @@
-import { parsePosts, parseSite } from './content.ts';
+import { parsePosts, parseSite, SITE_IMAGE_KEYS } from './content.ts';
 import type { PostsData, SiteData } from './content.ts';
 import { savePosts, saveSite, uploadProjectImages } from './github.ts';
 import type { FileSnapshot, UploadedImage } from './github.ts';
@@ -31,13 +31,33 @@ export async function persistDraft(options: {
 }) {
   let snapshot = structuredClone(options.snapshot);
   const draft = structuredClone(options.draft);
-  parseSite(draft.site);
+  const siteToValidate = structuredClone(draft.site);
+  if (siteToValidate.media) {
+    for (const key of SITE_IMAGE_KEYS) {
+      if (options.pending.has(siteToValidate.media[key])) {
+        siteToValidate.media[key] = `public/images/projects/site-assets/${key}.png`;
+      }
+    }
+  }
+  parseSite(siteToValidate);
   // Validate the entire draft before any write, substituting staged paths only for validation.
   parsePosts({ ...draft.posts, posts: draft.posts.posts.map((post) => ({
     ...post, images: post.images.map((image) => ({ ...image, path: options.pending.has(image.path)
       ? `public/images/projects/${post.id}/pending.png` : image.path })),
   })) });
   const acknowledge = () => options.acknowledge(structuredClone(snapshot), structuredClone(draft));
+  if (draft.site.media) {
+    for (const key of SITE_IMAGE_KEYS) {
+      const placeholder = draft.site.media[key];
+      const pending = options.pending.get(placeholder);
+      if (!pending) continue;
+      // Reserve one managed upload folder for site images; originals remain untouched.
+      const [uploaded] = await uploadProjectImages('site-assets', [pending.file], options.token);
+      draft.site.media[key] = uploaded.path;
+      options.uploaded(placeholder, uploaded);
+      acknowledge();
+    }
+  }
   if (!sameContent(draft.site, snapshot.site.data)) {
     snapshot.site = await saveSite(draft.site, snapshot.site.sha, options.token);
     acknowledge();

@@ -26,6 +26,8 @@ Nội dung và ảnh được đọc trực tiếp từ repository trên GitHub.
 4. **Cancel** hoặc **Exit Edit Mode** bỏ các thay đổi chưa lưu sau khi xác nhận.
 5. Nếu lưu lỗi, bản nháp được giữ lại để thử lại. Đăng xuất/tải lại trang sẽ kết thúc phiên quản trị.
 
+**Đổi ảnh khi đang Edit:** ảnh đầu trang ở Trang chủ; ảnh giới thiệu ở Trang chủ/Giới thiệu; logo ở Liên hệ. Ảnh dự án có nút **Đổi ảnh** trong Chi tiết dự án. Chọn ảnh, xem trước rồi nhấn **Save**; **Cancel** khôi phục ảnh cũ. Logo dạng bảng hiệu có tùy chọn lấy riêng biểu tượng ở đầu trang.
+
 Cập nhật nội dung qua Save không yêu cầu build lại frontend.
 
 ## Kiểm tra và build

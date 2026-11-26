@@ -109,6 +109,7 @@ Website chính phải đọc dữ liệu động từ GitHub, không phụ thu�
 
 - `company`: `name`, `legalName`, `headline`, `description`, `about`, `experience`, `tagline`, `phone`, `phoneSecondary`, `email`, `address`, `fanpage`, `fanpageUrl`. Các trường bổ sung là tùy chọn để dữ liệu cũ vẫn đọc được.
 - `media`: các đường dẫn `logo`, `hero`, `about`. Ảnh được kiểm tra chỉ nằm trong `public/images/`.
+- `media.logoLayout`: tùy chọn `board` (lấy biểu tượng trong bảng hiệu) hoặc `contain` (hiển thị trọn logo). Đường dẫn ảnh có thể để trống khi chủ động bỏ ảnh.
 - Mỗi dịch vụ: `id`, `title`, `description`.
 
 `data/posts.json` có `schemaVersion: 1` và mảng `posts`. Mỗi dự án gồm:
@@ -176,10 +177,11 @@ Email, URL fanpage và số năm kinh nghiệm không có trong ảnh; để tr�
 | Giai đoạn demo | Đã kết thúc và gỡ mã riêng | Không còn chế độ lưu thử trong tab |
 | Thông tin công ty | Đã bổ sung từ logo | Hai số điện thoại, địa chỉ, tên pháp lý, tên fanpage, bốn nhóm dịch vụ |
 | Ảnh thực tế và logo | Đã tích hợp | Logo ở đầu trang và bảng đầy đủ ở Liên hệ; toàn bộ 17 ảnh có tham chiếu |
+| Chỉnh sửa ảnh cấp trang | Đã bổ sung | Đổi/bỏ logo ở Liên hệ, ảnh đầu trang ở Trang chủ, ảnh giới thiệu ở Trang chủ/Giới thiệu; xem trước, Save/Cancel; có nút thay trực tiếp từng ảnh dự án |
 | Chỉnh sửa và lưu thật | Đã nối với API | `src/useContentEditor.ts`, `src/editor.ts`; Edit/Save/Cancel/Exit, CRUD, thêm/sắp xếp/bỏ ảnh |
 | An toàn khi lưu lỗi | Đã kiểm thử giả lập | Giữ bản nháp, giữ SHA sau thành công một phần, không upload lại ảnh đã thành công |
 | Hủy ảnh tải lên chưa công khai | Đã triển khai | Chỉ dọn ảnh mới thuộc phiên hiện tại, đọc lại tham chiếu trên GitHub trước khi xóa; giữ nguyên ảnh gốc và ảnh đã công khai |
-| Kiểm tra tự động | 18/18 test đạt | Schema, API, phiên đăng nhập, lưu thành công một phần, upload và ảnh gốc |
+| Kiểm tra tự động | 20/20 test đạt | Schema, API, phiên đăng nhập, lưu thành công một phần, upload ảnh dự án và ảnh cấp trang; fixture không phụ thuộc nội dung admin đã sửa |
 | Build và TypeScript | Đạt | `npm run build` |
 | Kiểm thử trình duyệt | Đã kiểm tra với GitHub giả lập | Các trang tại 320/375/768/1440 px; đăng nhập, sửa, lưu, hủy, xóa, xung đột và 30 dự án × 10 ảnh |
 | Nội dung cần bổ sung | Còn thiếu dữ kiện | Email, URL fanpage, năng lực/kinh nghiệm cụ thể và tên chính thức của từng công trình |

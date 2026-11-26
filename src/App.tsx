@@ -57,7 +57,7 @@ export default function App() {
   }
   return <div className={`site ${admin ? 'site-admin' : ''} ${editing ? 'site-editing' : ''}`}>
     <a className="site-skip" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>Đến nội dung chính</a>
-    {data && <Header site={data.site} path={path} />}
+    {data && <Header site={data.site} path={path} imageSrc={editor.imageSrc} />}
     {editor.error && <div className="site-container site-error" role="alert">{editor.error}{!editing && <button disabled={editor.loading} onClick={() => { void editor.refresh(true); }}>Thử tải lại</button>}</div>}
     <main id="main-content" tabIndex={-1}><fieldset className="site-content" disabled={busy} aria-busy={busy}>{page}</fieldset></main>
     {data && <Footer site={data.site} />}

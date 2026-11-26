@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { SiteData } from '../content.ts';
-import { projectImageUrl } from '../github.ts';
 import { Icon, phoneHref } from './Website.tsx';
 
 export const navigation = [['/', 'Trang chủ'], ['/about', 'Giới thiệu'], ['/services', 'Dịch vụ'], ['/projects', 'Dự án'], ['/contact', 'Liên hệ']];
 
-export default function Header({ site, path }: { site: SiteData; path: string }) {
+export default function Header({ site, path, imageSrc }: { site: SiteData; path: string; imageSrc: (path: string) => string }) {
   const [menu, setMenu] = useState(false);
   useEffect(() => { setMenu(false); }, [path]);
   return <>
@@ -13,7 +12,7 @@ export default function Header({ site, path }: { site: SiteData; path: string })
       <a href={phoneHref(site.company.phone)}>Hotline: {site.company.phone}</a></div></div>
     <header className="site-header"><div className="site-container">
       <a className="site-brand" href="#/" aria-label={`${site.company.name} — Trang chủ`}>
-        {site.media?.logo && <span className="site-logo-window"><img src={projectImageUrl(site.media.logo)} alt={`Logo ${site.company.name}`} /></span>}
+        {site.media?.logo && <span className={`site-logo-window ${site.media.logoLayout === 'board' ? 'site-logo-board' : ''}`}><img src={imageSrc(site.media.logo)} alt={`Logo ${site.company.name}`} /></span>}
         <span>{site.company.name}<small>ĐIỆN NƯỚC & THI CÔNG</small></span>
       </a>
       <nav className={menu ? 'is-open' : ''} aria-label="Điều hướng chính">

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Project, ProjectImage, SiteData } from './content.ts';
+import { siteImagePaths } from './content.ts';
+import type { Project, ProjectImage, SiteData, SiteImageKey } from './content.ts';
 import { getAdminToken, useAdminSession } from './auth.ts';
 import { deleteProjectImage, projectImageUrl, readPosts, readSite, validateImageFiles } from './github.ts';
 import type { UploadedImage } from './github.ts';
@@ -73,6 +74,34 @@ export function useContentEditor() {
   function updateServices(services: SiteData['services']) {
     editDraft((previous) => ({ ...previous, site: { ...previous.site, services } }));
   }
+  function stageImage(file: File) {
+    const path = `pending:${crypto.randomUUID()}`;
+    const url = URL.createObjectURL(file);
+    urls.current.add(url);
+    pending.current.set(path, { file, url });
+    return path;
+  }
+  function updateSiteImage(key: SiteImageKey, file: File | null) {
+    if (!admin || !editing || writeLock.current) return;
+    let path = '';
+    if (file) {
+      try { validateImageFiles([file]); } catch (failure) {
+        setError(failure instanceof Error ? failure.message : 'Ảnh không hợp lệ.'); return;
+      }
+      path = stageImage(file);
+    }
+    editDraft((previous) => ({ ...previous, site: { ...previous.site, media: {
+      logo: '', hero: '', about: '', ...previous.site.media, [key]: path,
+      ...(key === 'logo' && file ? { logoLayout: 'contain' as const } : {}),
+    } } }));
+    setError('');
+    setMessage(file ? 'Ảnh đã được đổi trong bản nháp. Nhấn Save để lưu lên website.' : 'Ảnh được bỏ khỏi bản nháp. Nhấn Save để xác nhận.');
+  }
+  function updateLogoLayout(layout: 'board' | 'contain') {
+    editDraft((previous) => previous.site.media ? { ...previous, site: { ...previous.site,
+      media: { ...previous.site.media, logoLayout: layout },
+    } } : previous);
+  }
   function updateProject(id: string, values: Partial<Project>) {
     editDraft((previous) => ({ ...previous, posts: { ...previous.posts, posts: previous.posts.posts.map((post) => post.id === id ? { ...post, ...values } : post) } }));
   }
@@ -93,16 +122,19 @@ export function useContentEditor() {
     try { validateImageFiles(selected); } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Ảnh không hợp lệ.'); return;
     }
-    const images: ProjectImage[] = selected.map((file) => {
-      const path = `pending:${crypto.randomUUID()}`;
-      const url = URL.createObjectURL(file);
-      urls.current.add(url);
-      pending.current.set(path, { file, url });
-      return { path, alt: project.title };
-    });
+    const images: ProjectImage[] = selected.map((file) => ({ path: stageImage(file), alt: project.title }));
     updateProject(project.id, { images: [...project.images, ...images] });
     setError('');
     setMessage('Ảnh đã được thêm vào bản nháp. Nhấn Save để tải lên và lưu.');
+  }
+  function replaceProjectImage(project: Project, index: number, file: File) {
+    if (!admin || !editing || writeLock.current || !project.images[index]) return;
+    try { validateImageFiles([file]); } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Ảnh không hợp lệ.'); return;
+    }
+    const path = stageImage(file);
+    updateProject(project.id, { images: project.images.map((image, i) => i === index ? { ...image, path } : image) });
+    setError(''); setMessage('Ảnh đã được thay trong bản nháp. Nhấn Save để lưu.');
   }
   function imageSrc(path: string) {
     return pending.current.get(path)?.url || previews.current.get(path) || projectImageUrl(path);
@@ -128,14 +160,14 @@ export function useContentEditor() {
     // Check the current remote references before deleting any session-owned upload.
     let published: Set<string>;
     try {
-      const current = await readPosts(true);
-      published = new Set(current.data.posts.flatMap((post) => post.images.map((image) => image.path)));
+      const [current, currentSite] = await Promise.all([readPosts(true), readSite(true)]);
+      published = new Set([...current.data.posts.flatMap((post) => post.images.map((image) => image.path)), ...siteImagePaths(currentSite.data)]);
     } catch {
       setOrphanCount(uploaded.current.size);
       return uploaded.current.size;
     }
-    const inDraft = new Set(!discarding && editingRef.current
-      ? draft?.posts.posts.flatMap((post) => post.images.map((image) => image.path)) : []);
+    const inDraft = new Set(!discarding && editingRef.current && draft
+      ? [...draft.posts.posts.flatMap((post) => post.images.map((image) => image.path)), ...siteImagePaths(draft.site)] : []);
     let failures = 0;
     for (const [path, image] of uploaded.current) {
       if (published.has(path)) { uploaded.current.delete(path); continue; }
@@ -188,7 +220,7 @@ export function useContentEditor() {
   }
   const data = editing ? draft : snapshot ? contentDraft(snapshot) : null;
   return { data, admin, editing, busy, loading, dirty, error, message, orphanCount,
-    updateCompany, updateServices, updateProject, addProject, removeProject, addImages, imageSrc,
+    updateCompany, updateServices, updateSiteImage, updateLogoLayout, updateProject, addProject, removeProject, addImages, replaceProjectImage, imageSrc,
     refresh, enterEdit, discard, save, cleanOrphans, clearMessage: () => setMessage('') };
 }
 

@@ -18,6 +18,7 @@ export default function ProjectDetail({ project, editor, onDelete }: { project?:
     <div className="site-gallery">{project.images.map((image, index) => <figure key={image.path}>
       <img src={imageSrc(image.path)} alt={image.alt || project.title} loading="lazy" width="1000" height="700" />
       {editing && <figcaption><span>{index === 0 ? 'Ảnh đại diện' : `Ảnh ${index + 1}`}</span><Field value={image.alt} onChange={(alt) => change({ images: project.images.map((item, i) => i === index ? { ...item, alt } : item) })} editing label={`Mô tả ảnh ${index + 1}`} /><div>
+        <label className="site-replace-photo site-upload">Đổi ảnh<input type="file" aria-label={`Chọn ảnh thay thế ${index + 1}`} accept="image/jpeg,image/png,image/webp,image/avif" onChange={(event) => { const file = event.target.files?.[0]; if (file) editor.replaceProjectImage(project, index, file); event.target.value = ''; }} /></label>
         {index > 0 && <button onClick={() => change({ images: [image, ...project.images.filter((_, i) => i !== index)] })}>Đặt đại diện</button>}
         {index > 0 && <button onClick={() => { const images = [...project.images]; [images[index - 1], images[index]] = [images[index], images[index - 1]]; change({ images }); }}>Lên trước</button>}
         <button onClick={() => change({ images: project.images.filter((_, i) => i !== index) })}>Bỏ khỏi bài viết</button>

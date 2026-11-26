@@ -1,6 +1,7 @@
 import type { ContentEditor } from '../useContentEditor.ts';
 import type { SiteData } from '../content.ts';
 import { Field, PageHeading, phoneHref } from '../components/Website.tsx';
+import SiteImageEditor from '../components/SiteImageEditor.tsx';
 
 export default function Contact({ editor }: { editor: ContentEditor }) {
   const { data, editing, updateCompany, imageSrc } = editor;
@@ -20,6 +21,6 @@ export default function Contact({ editor }: { editor: ContentEditor }) {
           : kind === 'phone' ? <a href={phoneHref(value)}>{value}</a> : kind === 'email' ? <a href={`mailto:${value}`}>{value}</a>
             : key === 'fanpage' && company.fanpageUrl ? <a href={company.fanpageUrl} target="_blank" rel="noreferrer">{value}</a> : value}</dd></div>;
       })}</dl>
-    </div>{media?.logo && <figure className="site-company-board"><img src={imageSrc(media.logo)} alt={`Bảng thông tin ${company.legalName || company.name}`} loading="lazy" width="1440" height="729" /></figure>}</section>
+    </div>{(media?.logo || editing) && <section className="site-company-board"><SiteImageEditor editor={editor} kind="logo" />{media?.logo && <img src={imageSrc(media.logo)} alt={`Thông tin và nhận diện ${company.legalName || company.name}`} loading="lazy" width="1440" height="729" />}</section>}</section>
   </>;
 }

@@ -39,7 +39,14 @@ export interface SiteData {
     tagline?: string;
   };
   services: { id: string; title: string; description: string }[];
-  media?: { logo: string; hero: string; about: string };
+  media?: { logo: string; hero: string; about: string; logoLayout?: 'board' | 'contain' };
+}
+
+export const SITE_IMAGE_KEYS = ['logo', 'hero', 'about'] as const;
+export type SiteImageKey = typeof SITE_IMAGE_KEYS[number];
+
+export function siteImagePaths(site: SiteData) {
+  return SITE_IMAGE_KEYS.map((key) => site.media?.[key]).filter((path): path is string => !!path);
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -109,8 +116,9 @@ export function parseSite(value: unknown): SiteData {
     throw new Error('Tiêu đề trang chủ không được để trống.');
   }
   if (value.media !== undefined && (!record(value.media)
-    || !['logo', 'hero', 'about'].every((key) => typeof (value.media as Record<string, unknown>)[key] === 'string'
-      && isPublicImagePath((value.media as Record<string, string>)[key])))) {
+    || !SITE_IMAGE_KEYS.every((key) => typeof (value.media as Record<string, unknown>)[key] === 'string'
+      && ((value.media as Record<string, string>)[key] === '' || isPublicImagePath((value.media as Record<string, string>)[key])))
+    || (value.media.logoLayout !== undefined && !['board', 'contain'].includes(value.media.logoLayout as string)))) {
     throw new Error('Đường dẫn ảnh nhận diện không hợp lệ.');
   }
   const ids = new Set<string>();

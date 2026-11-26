@@ -2,7 +2,11 @@
 
 ## Mở demo
 
-**Online:** https://bomxanhgz.github.io/THIEN-THOI-LAM-DONG/?demo=1#/
+**Website:** https://bomxanhgz.github.io/THIEN-THOI-LAM-DONG/#/
+
+**Demo:** https://bomxanhgz.github.io/THIEN-THOI-LAM-DONG/?demo=1#/
+
+Website chính và bản demo có giao diện riêng. Dùng URL có `?demo=1` để mở giao diện demo và thử chỉnh sửa.
 
 Demo có 4 bài đăng mẫu và 6 ảnh từ thư mục `img-demo`.
 
@@ -18,6 +22,7 @@ Demo không cần token, không ghi lên GitHub. Tải lại trang sẽ khôi ph
 Dùng Node.js 24.13+ trong nhánh 24.x. Mở **PowerShell**, chuyển vào thư mục dự án rồi chạy:
 
 ```powershell
+cd "E:\BomXanhG-Z_File\THIEN-THOI-LAM-DONG"
 npm ci
 npm run dev
 ```
@@ -27,6 +32,7 @@ Mở http://localhost:5173/THIEN-THOI-LAM-DONG/?demo=1#/
 ## Kiểm tra và build
 
 ```powershell
+cd "E:\BomXanhG-Z_File\THIEN-THOI-LAM-DONG"
 npm test
 npm run build
 npm run preview
@@ -38,6 +44,7 @@ http://localhost:4173/THIEN-THOI-LAM-DONG/?demo=1#/
 ## Deploy
 
 ```powershell
+cd "E:\BomXanhG-Z_File\THIEN-THOI-LAM-DONG"
 git add .
 git commit -m "Update website demo"
 git push origin main

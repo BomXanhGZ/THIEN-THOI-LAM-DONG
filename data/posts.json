@@ -103,6 +103,27 @@
       "featured": true,
       "createdAt": "2026-11-26T00:00:00Z",
       "updatedAt": "2026-11-26T00:00:00Z"
+    },
+    {
+      "id": "cong-trinh-f8261a93-16be-454a-b30b-66bb40f0ab3e",
+      "slug": "cong-trinh-f8261a93-16be-454a-b30b-66bb40f0ab3e",
+      "title": "QA UI 444afa3ba4",
+      "summary": "Bài kiểm thử UI tạm thời — sẽ được dọn sau phiên test.",
+      "content": "Nội dung kiểm thử tiếng Việt.\nDòng thứ hai: thêm, sửa và xóa bài từ giao diện.",
+      "images": [
+        {
+          "path": "public/images/projects/cong-trinh-f8261a93-16be-454a-b30b-66bb40f0ab3e/c0c5ebda-d96d-485a-a92e-9134d310b4a0.png",
+          "alt": "QA UI 444afa3ba4"
+        },
+        {
+          "path": "public/images/projects/cong-trinh-f8261a93-16be-454a-b30b-66bb40f0ab3e/11053e3c-1975-4207-ac9d-a1288a81d7df.png",
+          "alt": "QA UI 444afa3ba4"
+        }
+      ],
+      "featured": true,
+      "category": "Kiểm thử UI",
+      "createdAt": "2026-11-26T10:09:37.752Z",
+      "updatedAt": "2026-11-26T10:09:44.525Z"
     }
   ]
 }

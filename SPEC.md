@@ -187,7 +187,7 @@ Email, URL fanpage và số năm kinh nghiệm không có trong ảnh; để tr�
 | Website online | Đã kiểm tra trên trình duyệt thật | Trang chủ, logo, ba nhóm ảnh và thông tin liên hệ đọc đúng từ GitHub; 20 file phát hành được đối chiếu với build local |
 | Nghiệm thu ghi dữ liệu thật từ trình duyệt | Còn cần | Kiểm tra bằng token quản trị thực tế sau deploy; test giả lập không thay thế nghiệm thu này |
 
-Lỗi deploy trước: [Actions run 45779102492](https://github.com/BomXanhGZ/THIEN-THOI-LAM-DONG/actions/runs/45779102492). Log ghi nhận upload `github-pages` thành công nhưng truy vấn metadata ngay sau đó trả 0 artifact; API sau đó có đúng artifact và chưa hết hạn. Workflow bổ sung quyền đọc Actions và chờ metadata tối đa 12 lượt trước khi deploy.
+Lỗi deploy trước: [Actions run 45779102492](https://github.com/BomXanhGZ/THIEN-THOI-LAM-DONG/actions/runs/45779102492). Log ghi nhận upload `github-pages` thành công nhưng truy vấn metadata ngay sau đó trả 0 artifact; API sau đó có đúng artifact và chưa hết hạn. Bước chờ REST đơn thuần vẫn chưa giải quyết được lượt lỗi `45784330271`: dịch vụ artifact bên trong `deploy-pages` trả rỗng dù REST đã thấy file. Workflow hiện dùng chính `artifact_id` do bước upload trả về, xác minh artifact thuộc đúng workflow run qua REST rồi tạo và theo dõi Pages deployment bằng API của GitHub với OIDC. Không dùng token quản trị website để deploy.
 
 ## 10. Tiêu chí nghiệm thu cuối cùng
 

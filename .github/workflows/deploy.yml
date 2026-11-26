@@ -46,36 +46,72 @@ jobs:
       - name: Set up Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
       - name: Upload artifact
+        id: pages_artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: dist
-      - name: Wait for Pages artifact metadata
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          python3 - <<'PY'
-          import json
-          import os
-          import time
-          import urllib.request
-
-          url = f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}/artifacts"
-          request = urllib.request.Request(url, headers={
-              'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
-              'Accept': 'application/vnd.github+json',
-              'User-Agent': 'pages-artifact-readiness',
-          })
-          for attempt in range(12):
-              with urllib.request.urlopen(request, timeout=20) as response:
-                  artifacts = json.load(response)['artifacts']
-              if any(item['name'] == 'github-pages' and not item['expired'] for item in artifacts):
-                  print('Pages artifact metadata is available.')
-                  break
-              print(f'Waiting for Pages artifact metadata ({attempt + 1}/12)...')
-              time.sleep(5)
-          else:
-              raise SystemExit('Pages artifact was uploaded but its metadata is not available.')
-          PY
-      - name: Deploy
+      - name: Deploy uploaded artifact to Pages
         id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          PAGES_ARTIFACT_ID: ${{ steps.pages_artifact.outputs.artifact_id }}
+        with:
+          retries: 3
+          script: |
+            // Use the upload's exact ID. The artifact service lookup in deploy-pages
+            // intermittently returned no results even when the REST API had the file.
+            const artifactId = Number(process.env.PAGES_ARTIFACT_ID);
+            if (!Number.isSafeInteger(artifactId) || artifactId <= 0) {
+              throw new Error('The upload did not return a valid artifact ID.');
+            }
+            let ready = false;
+            for (let attempt = 0; attempt < 12; attempt++) {
+              try {
+                const { data: artifact } = await github.rest.actions.getArtifact({
+                  ...context.repo, artifact_id: artifactId
+                });
+                if (artifact.expired || artifact.workflow_run?.id !== context.runId) {
+                  throw new Error('The artifact is expired or belongs to another workflow run.');
+                }
+                ready = true;
+                break;
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await new Promise(resolve => setTimeout(resolve, 5000));
+              }
+            }
+            if (!ready) throw new Error('The uploaded artifact is not available.');
+            const oidcToken = await core.getIDToken();
+            const { data: deployment } = await github.request('POST /repos/{owner}/{repo}/pages/deployments', {
+              ...context.repo,
+              artifact_id: artifactId,
+              pages_build_version: context.sha,
+              oidc_token: oidcToken
+            });
+            const deploymentId = deployment.id || deployment.status_url?.split('/').pop();
+            if (!deploymentId) throw new Error('Pages did not return a deployment ID.');
+            let succeeded = false;
+            try {
+              for (let attempt = 0; attempt < 72; attempt++) {
+                const { data: status } = await github.request('GET /repos/{owner}/{repo}/pages/deployments/{deploymentId}', {
+                  ...context.repo, deploymentId
+                });
+                core.info('Pages deployment status: ' + status.status);
+                if (status.status === 'succeed') {
+                  succeeded = true;
+                  core.setOutput('page_url', deployment.page_url || `https://${context.repo.owner.toLowerCase()}.github.io/${context.repo.repo}/`);
+                  break;
+                }
+                if (['deployment_failed', 'deployment_content_failed', 'deployment_cancelled', 'deployment_lost'].includes(status.status)) {
+                  throw new Error('Pages deployment failed: ' + status.status);
+                }
+                await new Promise(resolve => setTimeout(resolve, 5000));
+              }
+              if (!succeeded) throw new Error('Timed out waiting for Pages deployment.');
+            } finally {
+              if (!succeeded) {
+                await github.request('POST /repos/{owner}/{repo}/pages/deployments/{deploymentId}/cancel', {
+                  ...context.repo, deploymentId
+                }).catch(error => core.warning('Could not cancel Pages deployment: ' + error.message));
+              }
+            }

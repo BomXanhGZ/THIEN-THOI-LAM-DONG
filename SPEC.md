@@ -107,7 +107,7 @@ Website chính phải đọc dữ liệu động từ GitHub, không phụ thu�
 
 `data/site.json` có `schemaVersion: 1`, đối tượng `company` và mảng `services`.
 
-- `company`: `name`, `legalName`, `headline`, `description`, `about`, `experience`, `tagline`, `phone`, `phoneSecondary`, `email`, `address`, `fanpage`, `fanpageUrl`. Các trường bổ sung là tùy chọn để dữ liệu cũ vẫn đọc được.
+- `company`: `name`, `legalName`, `headline`, `description`, `about`, `experience`, `tagline`, `phone`, `phoneSecondary`, `address`, `fanpage`, `fanpageUrl`. Các trường bổ sung là tùy chọn để dữ liệu cũ vẫn đọc được. Công ty không sử dụng email; không có mục email trên giao diện xem hoặc chỉnh sửa.
 - `media`: các đường dẫn `logo`, `hero`, `about`. Ảnh được kiểm tra chỉ nằm trong `public/images/`.
 - `media.logoLayout`: tùy chọn `board` (lấy biểu tượng trong bảng hiệu) hoặc `contain` (hiển thị trọn logo). Đường dẫn ảnh có thể để trống khi chủ động bỏ ảnh.
 - Mỗi dịch vụ: `id`, `title`, `description`.
@@ -155,10 +155,10 @@ Thông tin trích trực tiếp từ ảnh `logo.png`:
 | Tên công ty | Công ty TNHH Thiên Thời Lâm Đồng |
 | Điện thoại | 0388 600 880; 0337 200 880 |
 | Địa chỉ | Xóm 3, thôn 9, Lộc Ngãi, Bảo Lâm 1, Lâm Đồng |
-| Fanpage | Thiên Thời Lâm Đồng; chưa có URL chính thức |
+| Fanpage | Thiên Thời Lâm Đồng; [Facebook](https://www.facebook.com/thoiii.kenly), URL do chủ dự án cung cấp ngày 26/11/2026 |
 | Dịch vụ | Thi công điện, thi công nước, thi công xây dựng; cung cấp vật tư điện nước |
 
-Email, URL fanpage và số năm kinh nghiệm không có trong ảnh; để trống và không hiển thị thông tin giả.
+Chủ dự án xác nhận ngày 26/11/2026: công ty không dùng email, liên hệ bằng số điện thoại; bỏ mục email khỏi dữ liệu hiện tại và giao diện. Link fanpage dùng đúng URL được cung cấp ở trên. Số năm kinh nghiệm chưa được xác nhận nên để trống.
 
 ## 8. Build và deployment
 
@@ -184,7 +184,7 @@ Email, URL fanpage và số năm kinh nghiệm không có trong ảnh; để tr�
 | Kiểm tra tự động | 20/20 test đạt | Schema, API, phiên đăng nhập, lưu thành công một phần, upload ảnh dự án và ảnh cấp trang; fixture không phụ thuộc nội dung admin đã sửa |
 | Build và TypeScript | Đạt | `npm run build` |
 | Kiểm thử trình duyệt | Đã kiểm tra với GitHub giả lập | Các trang tại 320/375/768/1440 px; đăng nhập, sửa, lưu, hủy, xóa, xung đột và 30 dự án × 10 ảnh |
-| Nội dung cần bổ sung | Còn thiếu dữ kiện | Email, URL fanpage, năng lực/kinh nghiệm cụ thể và tên chính thức của từng công trình |
+| Nội dung cần bổ sung | Còn thiếu dữ kiện | Năng lực/kinh nghiệm cụ thể và tên chính thức của từng công trình; fanpage đã có URL, email đã được xác nhận không sử dụng |
 | GitHub Pages | Deploy thành công | Commit `6a5f348`, [Actions run 45784802911](https://github.com/BomXanhGZ/THIEN-THOI-LAM-DONG/actions/runs/45784802911); triển khai trực tiếp bằng ID artifact và OIDC đã đạt |
 | Website online | Đã kiểm tra trên trình duyệt thật | Trang chủ, logo, ba nhóm ảnh và thông tin liên hệ đọc đúng từ GitHub; 20 file phát hành được đối chiếu với build local |
 | Nghiệm thu ghi dữ liệu thật từ trình duyệt | Còn cần | Kiểm tra bằng token quản trị thực tế sau deploy; test giả lập không thay thế nghiệm thu này |
@@ -208,12 +208,11 @@ Lỗi deploy trước: [Actions run 45779102492](https://github.com/BomXanhGZ/TH
 ## 11. Các bước tiếp theo
 
 1. Nghiệm thu Edit/Save/Cancel và upload bằng token quản trị thực tế.
-2. Bổ sung email, URL fanpage, thông tin năng lực và tên/mô tả chính thức của công trình khi được cung cấp.
+2. Bổ sung thông tin năng lực và tên/mô tả chính thức của công trình khi được cung cấp.
 3. Duyệt lại nội dung và các thiết bị thực tế trước khi bàn giao.
 
 ## 12. Thông tin cần chủ dự án cung cấp hoặc xác nhận
 
-- Email công khai và URL fanpage chính thức, nếu có.
 - Thông tin kinh nghiệm, năng lực đã xác nhận.
 - Tên chính thức và mô tả chi tiết tương ứng với các nhóm ảnh công trình.
 - Kết quả nghiệm thu thao tác lưu thật bằng tài khoản quản trị của chủ dự án.

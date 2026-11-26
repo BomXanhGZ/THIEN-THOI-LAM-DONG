@@ -29,7 +29,6 @@ export interface SiteData {
     about: string;
     experience: string;
     phone: string;
-    email: string;
     address: string;
     legalName?: string;
     phoneSecondary?: string;
@@ -99,7 +98,7 @@ export function parsePosts(value: unknown): PostsData {
 
 export function parseSite(value: unknown): SiteData {
   if (!record(value) || value.schemaVersion !== 1 || !record(value.company)
-    || !strings(value.company, ['name', 'description', 'about', 'experience', 'phone', 'email', 'address'])
+    || !strings(value.company, ['name', 'description', 'about', 'experience', 'phone', 'address'])
     || !(value.company.name as string).trim() || !Array.isArray(value.services)) {
     throw new Error('Cấu trúc data/site.json không hợp lệ.');
   }

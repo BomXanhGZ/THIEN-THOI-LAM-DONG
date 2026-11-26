@@ -11,7 +11,7 @@ const originalFetch = globalThis.fetch;
 const publishedSite = parseSite(JSON.parse(await readFile(new URL('../data/site.json', import.meta.url), 'utf8')));
 const publishedPosts = parsePosts(JSON.parse(await readFile(new URL('../data/posts.json', import.meta.url), 'utf8')));
 // Editor tests use fixtures so legitimate admin edits or an empty project list cannot break CI.
-const site = parseSite({ schemaVersion: 1, company: { name: 'Công ty kiểm thử', description: '', about: '', experience: '', phone: '', email: '', address: '' },
+const site = parseSite({ schemaVersion: 1, company: { name: 'Công ty kiểm thử', description: '', about: '', experience: '', phone: '', address: '' },
   services: [], media: { logo: 'public/images/logo.png', hero: 'public/images/5.png', about: 'public/images/f.png', logoLayout: 'board' } });
 const posts: PostsData = { schemaVersion: 1, posts: [{ id: 'fixture', slug: 'fixture', title: 'Công trình kiểm thử', summary: '', content: '',
   images: [{ path: 'public/images/1.png', alt: '' }], featured: false, createdAt: '2026-11-26T00:00:00Z', updatedAt: '2026-11-26T00:00:00Z' }] };

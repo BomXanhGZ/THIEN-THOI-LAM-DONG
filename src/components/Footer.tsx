@@ -11,7 +11,6 @@ export default function Footer({ site }: { site: SiteData }) {
       <div><h3>Khám phá</h3>{navigation.slice(1).map(([href, label]) => <a key={href} href={`#${href}`}>{label}</a>)}</div>
       <div><h3>Thông tin liên hệ</h3><a href={phoneHref(company.phone)}>{company.phone}</a>
         {company.phoneSecondary && <a href={phoneHref(company.phoneSecondary)}>{company.phoneSecondary}</a>}
-        {company.email && <a href={`mailto:${company.email}`}>{company.email}</a>}
         <p>{company.address}</p>
         {company.fanpage && (company.fanpageUrl ? <a href={company.fanpageUrl} target="_blank" rel="noreferrer">Fanpage: {company.fanpage}</a> : <p>Fanpage: {company.fanpage}</p>)}
       </div>

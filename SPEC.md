@@ -183,7 +183,8 @@ Email, URL fanpage và số năm kinh nghiệm không có trong ảnh; để tr�
 | Build và TypeScript | Đạt | `npm run build` |
 | Kiểm thử trình duyệt | Đã kiểm tra với GitHub giả lập | Các trang tại 320/375/768/1440 px; đăng nhập, sửa, lưu, hủy, xóa, xung đột và 30 dự án × 10 ảnh |
 | Nội dung cần bổ sung | Còn thiếu dữ kiện | Email, URL fanpage, năng lực/kinh nghiệm cụ thể và tên chính thức của từng công trình |
-| GitHub Pages | Cần xác nhận sau lượt deploy mới | Đã bổ sung chờ artifact xuất hiện trong API trước bước Deploy |
+| GitHub Pages | Deploy thành công | Commit `8f9c5c1`, [Actions run 45783910936](https://github.com/BomXanhGZ/THIEN-THOI-LAM-DONG/actions/runs/45783910936); bước chờ artifact và Deploy đều đạt |
+| Website online | Đã kiểm tra trên trình duyệt thật | Trang chủ, logo, ba nhóm ảnh và thông tin liên hệ đọc đúng từ GitHub; 20 file phát hành được đối chiếu với build local |
 | Nghiệm thu ghi dữ liệu thật từ trình duyệt | Còn cần | Kiểm tra bằng token quản trị thực tế sau deploy; test giả lập không thay thế nghiệm thu này |
 
 Lỗi deploy trước: [Actions run 45779102492](https://github.com/BomXanhGZ/THIEN-THOI-LAM-DONG/actions/runs/45779102492). Log ghi nhận upload `github-pages` thành công nhưng truy vấn metadata ngay sau đó trả 0 artifact; API sau đó có đúng artifact và chưa hết hạn. Workflow bổ sung quyền đọc Actions và chờ metadata tối đa 12 lượt trước khi deploy.
@@ -200,14 +201,13 @@ Lỗi deploy trước: [Actions run 45779102492](https://github.com/BomXanhGZ/TH
 - [ ] Cancel/Exit xử lý đúng bản nháp; lỗi lưu không làm mất bản nháp hoặc tự ghi đè dữ liệu mới hơn.
 - [x] Kiểm tra sức chứa 30 dự án, mỗi dự án 10 ảnh, bằng dữ liệu kiểm thử trong trình duyệt.
 - [ ] Kiểm tra lỗi quyền, mạng, giới hạn API, xung đột SHA và upload thành công một phần.
-- [ ] Pipeline deploy frontend thành công và các URL, ảnh hoạt động đúng dưới đường dẫn mới.
+- [x] Pipeline deploy frontend thành công và các URL, ảnh hoạt động đúng dưới đường dẫn mới.
 
 ## 11. Các bước tiếp theo
 
-1. Đẩy source, JSON và ảnh mới lên GitHub; xác nhận deployment và nội dung online.
-2. Nghiệm thu Edit/Save/Cancel và upload bằng token quản trị thực tế.
-3. Bổ sung email, URL fanpage, thông tin năng lực và tên/mô tả chính thức của công trình khi được cung cấp.
-4. Duyệt lại nội dung và các thiết bị thực tế trước khi bàn giao.
+1. Nghiệm thu Edit/Save/Cancel và upload bằng token quản trị thực tế.
+2. Bổ sung email, URL fanpage, thông tin năng lực và tên/mô tả chính thức của công trình khi được cung cấp.
+3. Duyệt lại nội dung và các thiết bị thực tế trước khi bàn giao.
 
 ## 12. Thông tin cần chủ dự án cung cấp hoặc xác nhận
 

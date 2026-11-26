@@ -18,7 +18,6 @@ Demo không cần token, không ghi lên GitHub. Tải lại trang sẽ khôi ph
 Dùng Node.js 24.13+ trong nhánh 24.x. Mở **PowerShell**, chuyển vào thư mục dự án rồi chạy:
 
 ```powershell
-cd "E:\BomXanhG-Z_File\THIEN-THOI-LAM-DONG"
 npm ci
 npm run dev
 ```
@@ -28,7 +27,6 @@ Mở http://localhost:5173/THIEN-THOI-LAM-DONG/?demo=1#/
 ## Kiểm tra và build
 
 ```powershell
-cd "E:\BomXanhG-Z_File\THIEN-THOI-LAM-DONG"
 npm test
 npm run build
 npm run preview
@@ -40,7 +38,6 @@ http://localhost:4173/THIEN-THOI-LAM-DONG/?demo=1#/
 ## Deploy
 
 ```powershell
-cd "E:\BomXanhG-Z_File\THIEN-THOI-LAM-DONG"
 git add .
 git commit -m "Update website demo"
 git push origin main

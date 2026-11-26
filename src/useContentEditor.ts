@@ -157,11 +157,21 @@ export function useContentEditor() {
   }
   async function cleanupUploads(discarding = false) {
     if (!uploaded.current.size) { setOrphanCount(0); return 0; }
+    // A successful write response is authoritative even when a subsequent public
+    // GET temporarily returns an older revision. Never garbage-collect those images.
+    const acknowledged = new Set([
+      ...(snapshotRef.current?.posts.data.posts.flatMap((post) => post.images.map((image) => image.path)) || []),
+      ...(snapshotRef.current ? siteImagePaths(snapshotRef.current.site.data) : []),
+    ]);
+    for (const path of uploaded.current.keys()) {
+      if (acknowledged.has(path)) uploaded.current.delete(path);
+    }
+    if (!uploaded.current.size) { setOrphanCount(0); return 0; }
     // Check the current remote references before deleting any session-owned upload.
     let published: Set<string>;
     try {
       const [current, currentSite] = await Promise.all([readPosts(true), readSite(true)]);
-      published = new Set([...current.data.posts.flatMap((post) => post.images.map((image) => image.path)), ...siteImagePaths(currentSite.data)]);
+      published = new Set([...acknowledged, ...current.data.posts.flatMap((post) => post.images.map((image) => image.path)), ...siteImagePaths(currentSite.data)]);
     } catch {
       setOrphanCount(uploaded.current.size);
       return uploaded.current.size;
@@ -186,6 +196,10 @@ export function useContentEditor() {
       setDraft(contentDraft(snapshotRef.current));
       pending.current.clear();
       editingRef.current = false; setEditing(false); setError('');
+      const path = window.location.hash.slice(1).replace(/\/$/, '');
+      if (path.startsWith('/projects/') && !snapshotRef.current.posts.data.posts.some((post) => path === `/projects/${post.slug}`)) {
+        window.location.hash = '/projects';
+      }
       setMessage(failures ? `Đã hủy bản nháp. Còn ${failures} ảnh tải lên chưa lưu; bạn có thể thử dọn ảnh lại.` : 'Đã hủy các thay đổi chưa lưu.');
     } finally { writeLock.current = false; setBusy(false); }
   }

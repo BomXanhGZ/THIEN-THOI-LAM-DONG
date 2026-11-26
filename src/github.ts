@@ -106,7 +106,9 @@ async function readJson<T>(path: string, parse: (value: unknown) => T, force = f
   if (!force && previous && previous.expiresAt > Date.now()) {
     return { data: parse(structuredClone(previous.data)), sha: previous.sha };
   }
-  const response = await request(`${contentEndpoint(path)}?ref=${encodeURIComponent(githubConfig.branch)}`, {
+  // A unique URL avoids serving a stale anonymous GitHub/CDN response after a write.
+  // The in-memory TTL and ETag still prevent unnecessary content transfers.
+  const response = await request(`${contentEndpoint(path)}?ref=${encodeURIComponent(githubConfig.branch)}&cache_bust=${crypto.randomUUID()}`, {
     etag: previous?.etag,
   });
   if (response.status === 304 && previous) {

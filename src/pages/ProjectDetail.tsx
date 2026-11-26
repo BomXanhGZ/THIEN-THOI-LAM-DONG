@@ -8,7 +8,7 @@ export default function ProjectDetail({ project, editor, onDelete }: { project?:
   const change = (values: Partial<Project>) => updateProject(project.id, values);
   return <article className="site-container site-project-detail"><a className="site-text-link" href="#/projects">← Tất cả dự án</a>
     <div className="site-detail-heading"><div><p className="site-eyebrow">DỰ ÁN & CÔNG TRÌNH</p><h1><Field value={project.title} onChange={(title) => change({ title })} editing={editing} label="Tên dự án" /></h1></div>{editing && <button className="site-button site-button-danger" onClick={onDelete}>Xóa dự án</button>}</div>
-    <div className="site-detail-category"><Field value={project.category || 'Công trình'} onChange={(category) => change({ category })} editing={editing} label="Nhóm dự án" />
+    <div className="site-detail-category"><Field value={project.category || (editing ? '' : 'Công trình')} onChange={(category) => change({ category })} editing={editing} label="Nhóm dự án" />
       {editing && <label className="site-checkbox"><input type="checkbox" checked={project.featured} onChange={(event) => change({ featured: event.target.checked })} /> Công trình tiêu biểu</label>}
     </div>
     <div className="site-detail-summary"><Field value={project.summary} onChange={(summary) => change({ summary })} editing={editing} label="Mô tả ngắn" multiline /></div>

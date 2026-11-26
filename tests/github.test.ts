@@ -45,10 +45,15 @@ test('tracked data matches schema; 30 projects and many images are supported', a
 
 test('public JSON reads decode UTF-8, cache clones, and revalidate with ETag', async () => {
   let calls = 0;
+  const urls: string[] = [];
   const value = { ...site, company: { ...site.company, name: 'THIEN-THOI-LAM-DONG — Điện nước 日本語' } };
   globalThis.fetch = async (input, init) => {
     calls += 1;
-    assert.match(String(input), /\/contents\/data\/site.json\?ref=main$/);
+    const url = new URL(String(input));
+    assert.match(url.pathname, /\/contents\/data\/site.json$/);
+    assert.equal(url.searchParams.get('ref'), 'main');
+    assert.match(url.searchParams.get('cache_bust') || '', /^[a-f0-9-]{36}$/);
+    urls.push(url.href);
     assert.equal(init?.cache, 'no-store');
     const headers = new Headers(init?.headers);
     assert.equal(headers.has('Authorization'), false);
@@ -65,6 +70,7 @@ test('public JSON reads decode UTF-8, cache clones, and revalidate with ETag', a
   assert.equal(calls, 1);
   assert.equal((await readSite(true)).sha, 'read-sha');
   assert.equal(calls, 2);
+  assert.notEqual(urls[0], urls[1]);
 });
 
 test('save uses the loaded SHA and branch, encodes UTF-8, then invalidates cache', async () => {

@@ -1,25 +1,12 @@
-﻿# THIEN-THOI-LAM-DONG — Demo
-
-## Mở demo
+# Thiên Thời Lâm Đồng
 
 **Website:** https://bomxanhgz.github.io/THIEN-THOI-LAM-DONG/#/
 
-**Demo:** https://bomxanhgz.github.io/THIEN-THOI-LAM-DONG/?demo=1#/
-
-Website chính và bản demo có giao diện riêng. Dùng URL có `?demo=1` để mở giao diện demo và thử chỉnh sửa.
-
-Demo có 4 bài đăng mẫu và 6 ảnh từ thư mục `img-demo`.
-
-1. Nhấn **Edit demo** để sửa nội dung ngay trên trang.
-2. Vào **Dự án** để thêm bài; mở bài để sửa, xóa hoặc thêm nhiều ảnh.
-3. **Save** lưu bản xem thử trong bộ nhớ tab. **Cancel** bỏ thay đổi chưa lưu.
-4. Nút **×** cạnh Save là **Exit Edit Mode**.
-
-Demo không cần token, không ghi lên GitHub. Tải lại trang sẽ khôi phục dữ liệu mẫu.
+Đặc tả và tiến độ: [SPEC.md](SPEC.md).
 
 ## Chạy local
 
-Dùng Node.js 24.13+ trong nhánh 24.x. Mở **PowerShell**, chuyển vào thư mục dự án rồi chạy:
+Dùng Node.js 24.13+ trong nhánh 24.x. Mở PowerShell:
 
 ```powershell
 cd "E:\BomXanhG-Z_File\THIEN-THOI-LAM-DONG"
@@ -27,7 +14,19 @@ npm ci
 npm run dev
 ```
 
-Mở http://localhost:5173/THIEN-THOI-LAM-DONG/?demo=1#/
+Mở http://localhost:5173/THIEN-THOI-LAM-DONG/#/
+
+Nội dung và ảnh được đọc trực tiếp từ repository trên GitHub. Khi sửa JSON hoặc thêm ảnh bằng source local, cần commit/push để website đọc được dữ liệu mới.
+
+## Chỉnh sửa nội dung
+
+1. Mở `#/admin`, đăng nhập bằng GitHub Fine-grained Token có quyền Contents: Read and write trên repo này.
+2. Nhấn **Edit**, sửa thông tin trên các trang; vào Dự án để thêm/sửa/xóa bài và quản lý ảnh.
+3. **Save** tải ảnh mới và lưu dữ liệu lên GitHub. Ảnh chọn trước Save chỉ là bản nháp.
+4. **Cancel** hoặc **Exit Edit Mode** bỏ các thay đổi chưa lưu sau khi xác nhận.
+5. Nếu lưu lỗi, bản nháp được giữ lại để thử lại. Đăng xuất/tải lại trang sẽ kết thúc phiên quản trị.
+
+Cập nhật nội dung qua Save không yêu cầu build lại frontend.
 
 ## Kiểm tra và build
 
@@ -38,16 +37,15 @@ npm run build
 npm run preview
 ```
 
-Bản build nằm trong `dist/`. Mở preview tại:
-http://localhost:4173/THIEN-THOI-LAM-DONG/?demo=1#/
+Bản build nằm trong `dist/`. Preview: http://localhost:4173/THIEN-THOI-LAM-DONG/#/
 
-## Deploy
+## Deploy frontend
 
 ```powershell
 cd "E:\BomXanhG-Z_File\THIEN-THOI-LAM-DONG"
 git add .
-git commit -m "Update website demo"
+git commit -m "Update website"
 git push origin main
 ```
 
-GitHub Actions tự kiểm tra, build và deploy lên Pages. Theo dõi workflow **Deploy GitHub Pages** trong tab **Actions**; có thể chạy lại bằng **Run workflow**.
+Theo dõi workflow **Deploy GitHub Pages** trong tab **Actions**. Workflow tự kiểm tra, build, chờ artifact và deploy.

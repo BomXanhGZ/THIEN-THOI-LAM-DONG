@@ -1,4 +1,108 @@
 {
   "schemaVersion": 1,
-  "posts": []
+  "posts": [
+    {
+      "id": "thi-cong-tai-cong-trinh",
+      "slug": "thi-cong-tai-cong-trinh",
+      "title": "Thi công tại công trình",
+      "category": "Thi công",
+      "summary": "Hình ảnh quá trình thi công và làm việc tại công trường.",
+      "content": "Một số hình ảnh ghi lại quá trình làm việc tại công trình, từ các hạng mục đường ống và kỹ thuật đến công tác lắp đặt trong không gian xây dựng.",
+      "images": [
+        {
+          "path": "public/images/f.png",
+          "alt": "Thi công trong không gian công trình"
+        },
+        {
+          "path": "public/images/b.jpg",
+          "alt": "Thi công hạng mục ngầm tại công trường"
+        },
+        {
+          "path": "public/images/c.jpg",
+          "alt": "Làm việc tại khuôn viên công trình"
+        },
+        {
+          "path": "public/images/d.jpg",
+          "alt": "Gia công tại công trường"
+        },
+        {
+          "path": "public/images/e.jpg",
+          "alt": "Triển khai hạng mục bên trong công trình"
+        },
+        {
+          "path": "public/images/g.png",
+          "alt": "Thi công tại khu vực ngoài trời"
+        },
+        {
+          "path": "public/images/h.png",
+          "alt": "Lắp đặt tại công trình"
+        }
+      ],
+      "featured": true,
+      "createdAt": "2026-11-26T00:00:00Z",
+      "updatedAt": "2026-11-26T00:00:00Z"
+    },
+    {
+      "id": "chieu-sang-cong-trinh",
+      "slug": "chieu-sang-cong-trinh",
+      "title": "Chiếu sáng công trình và cảnh quan",
+      "category": "Chiếu sáng",
+      "summary": "Không gian kiến trúc và cảnh quan với các hạng mục chiếu sáng.",
+      "content": "Hình ảnh công trình ở các góc nhìn ban ngày và buổi tối. Các khu vực mặt đứng, lối đi và cảnh quan được ghi lại trong bộ ảnh do công ty cung cấp.",
+      "images": [
+        {
+          "path": "public/images/5.png",
+          "alt": "Mặt đứng công trình và hệ thống chiếu sáng"
+        },
+        {
+          "path": "public/images/6.png",
+          "alt": "Công trình với ánh sáng vào buổi tối"
+        },
+        {
+          "path": "public/images/a.jpg",
+          "alt": "Chiếu sáng bên ngoài công trình"
+        },
+        {
+          "path": "public/images/7.png",
+          "alt": "Ánh sáng tại khu vực cảnh quan"
+        },
+        {
+          "path": "public/images/8.png",
+          "alt": "Không gian sân vườn và ánh sáng"
+        }
+      ],
+      "featured": true,
+      "createdAt": "2026-11-26T00:00:00Z",
+      "updatedAt": "2026-11-26T00:00:00Z"
+    },
+    {
+      "id": "khong-gian-trang-tri",
+      "slug": "khong-gian-trang-tri",
+      "title": "Không gian trang trí và chiếu sáng",
+      "category": "Không gian",
+      "summary": "Hình ảnh không gian trang trí, ánh sáng và các chi tiết tại công trình.",
+      "content": "Bộ ảnh ghi lại các không gian trang trí và chiếu sáng với nhiều góc nhìn, từ khu vực trưng bày đến không gian bên ngoài.",
+      "images": [
+        {
+          "path": "public/images/3.jpg",
+          "alt": "Không gian trang trí vào buổi tối"
+        },
+        {
+          "path": "public/images/4.jpg",
+          "alt": "Chi tiết khu vực trang trí"
+        },
+        {
+          "path": "public/images/1.png",
+          "alt": "Ánh sáng và trang trí trong không gian"
+        },
+        {
+          "path": "public/images/2.png",
+          "alt": "Góc nhìn không gian trang trí"
+        }
+      ],
+      "featured": true,
+      "createdAt": "2026-11-26T00:00:00Z",
+      "updatedAt": "2026-11-26T00:00:00Z"
+    }
+  ]
 }

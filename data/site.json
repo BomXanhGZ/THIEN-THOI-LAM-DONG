@@ -1,13 +1,45 @@
 {
   "schemaVersion": 1,
   "company": {
-    "name": "THIEN-THOI-LAM-DONG",
-    "description": "Điện nước và thi công công trình.",
-    "about": "",
+    "name": "Thiên Thời Lâm Đồng",
+    "legalName": "Công ty TNHH Thiên Thời Lâm Đồng",
+    "headline": "Điện nước &\nthi công công trình.",
+    "description": "Thi công điện, nước, xây dựng và cung cấp vật tư điện nước tại Lâm Đồng.",
+    "about": "Công ty TNHH Thiên Thời Lâm Đồng hoạt động trong lĩnh vực thi công điện, nước và xây dựng. Công ty đồng thời cung cấp dây điện, thiết bị điện, ống nước và phụ kiện, thiết bị vệ sinh cùng vật tư ngành nước.",
     "experience": "",
-    "phone": "",
+    "tagline": "Uy tín – Chất lượng – Tận tâm – Bền vững",
+    "phone": "0388 600 880",
+    "phoneSecondary": "0337 200 880",
     "email": "",
-    "address": ""
+    "address": "Xóm 3, thôn 9, Lộc Ngãi, Bảo Lâm 1, Lâm Đồng",
+    "fanpage": "Thiên Thời Lâm Đồng",
+    "fanpageUrl": ""
   },
-  "services": []
+  "services": [
+    {
+      "id": "thi-cong-dien",
+      "title": "Thi công điện",
+      "description": "Thi công các hạng mục điện phục vụ công trình và không gian sử dụng."
+    },
+    {
+      "id": "thi-cong-nuoc",
+      "title": "Thi công nước",
+      "description": "Thi công hệ thống nước và các hạng mục đường ống trong công trình."
+    },
+    {
+      "id": "thi-cong-xay-dung",
+      "title": "Thi công xây dựng",
+      "description": "Trao đổi và triển khai các hạng mục xây dựng theo nhu cầu công trình."
+    },
+    {
+      "id": "vat-tu-dien-nuoc",
+      "title": "Vật tư điện nước",
+      "description": "Dây điện, thiết bị điện, ống nước và phụ kiện, thiết bị vệ sinh, vật tư ngành nước."
+    }
+  ],
+  "media": {
+    "logo": "public/images/logo.png",
+    "hero": "public/images/5.png",
+    "about": "public/images/f.png"
+  }
 }

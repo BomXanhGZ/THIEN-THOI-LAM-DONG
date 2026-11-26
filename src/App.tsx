@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { PostsData, SiteData } from './content.ts';
-import { readPosts, readSite } from './github.ts';
+import { useEffect, useRef, useState } from 'react';
+import { logoutAdmin } from './auth.ts';
+import { useContentEditor } from './useContentEditor.ts';
 import Header from './components/Header.tsx';
 import Footer from './components/Footer.tsx';
+import { Icon } from './components/Website.tsx';
 import Home from './pages/Home.tsx';
 import About from './pages/About.tsx';
 import Services from './pages/Services.tsx';
@@ -10,78 +11,62 @@ import Projects from './pages/Projects.tsx';
 import ProjectDetail from './pages/ProjectDetail.tsx';
 import Contact from './pages/Contact.tsx';
 import AdminLogin from './pages/AdminLogin.tsx';
+import './site.css';
 
-function currentPath() {
-  return window.location.hash.slice(1).replace(/\/$/, '') || '/';
-}
+function currentPath() { return window.location.hash.slice(1).replace(/\/$/, '') || '/'; }
+interface Confirmation { title: string; text: string; confirm: string; action: () => void | Promise<void> }
 
 export default function App() {
+  const editor = useContentEditor();
   const [path, setPath] = useState(currentPath);
-  const [content, setContent] = useState<{ site: SiteData; posts: PostsData } | null>(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  const refresh = useCallback(async (force = false) => {
-    setLoading(true);
-    try {
-      const [site, posts] = await Promise.all([readSite(force), readPosts(force)]);
-      setContent({ site: site.data, posts: posts.data });
-      setError('');
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Không thể tải nội dung.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const { data, editing, busy, dirty, admin } = editor;
   useEffect(() => {
     const navigate = () => { setPath(currentPath()); window.scrollTo(0, 0); };
-    const focus = () => { void refresh(); };
     window.addEventListener('hashchange', navigate);
-    window.addEventListener('focus', focus);
-    return () => {
-      window.removeEventListener('hashchange', navigate);
-      window.removeEventListener('focus', focus);
-    };
-  }, [refresh]);
+    return () => window.removeEventListener('hashchange', navigate);
+  }, []);
+  useEffect(() => { if (confirmation) dialog.current?.showModal(); else dialog.current?.close(); }, [confirmation]);
+  useEffect(() => {
+    if (data) document.title = `${data.site.company.name} — Điện nước & thi công`;
+  }, [data?.site.company.name]);
 
-  useEffect(() => { void refresh(); }, [refresh, path]);
-
-  const name = content?.site.company.name || 'THIEN-THOI-LAM-DONG';
-  let page;
-  if (path === '/admin') page = <AdminLogin />;
-  else if (!content) page = !error ? <p role="status">Đang tải nội dung…</p> : null;
-  else {
-    const { site, posts: { posts } } = content;
-    switch (path) {
-      case '/': page = <Home site={site} posts={posts} />; break;
-      case '/about': page = <About site={site} />; break;
-      case '/services': page = <Services site={site} />; break;
-      case '/projects': page = <Projects posts={posts} />; break;
-      case '/contact': page = <Contact site={site} />; break;
-      default: {
-        const match = /^\/projects\/([a-z0-9-]+)$/.exec(path);
-        page = match ? <ProjectDetail project={posts.find((post) => post.slug === match[1])} />
-          : <section><h1 className="text-2xl font-semibold">Không tìm thấy trang</h1><a href="#/" className="mt-5 inline-block underline">Về trang chủ</a></section>;
-      }
-    }
+  function discard() {
+    if (dirty) setConfirmation({ title: 'Bỏ các thay đổi chưa lưu?', text: 'Bản nháp hiện tại sẽ được bỏ. Các nội dung đã Save vẫn được giữ nguyên.', confirm: 'Bỏ thay đổi', action: editor.discard });
+    else void editor.discard();
   }
-
-  return (
-    <div className="flex min-h-screen flex-col">
-      <a href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content')?.focus(); }} className="sr-only focus:not-sr-only focus:p-3">Đến nội dung chính</a>
-      <Header name={name} path={path} />
-      <div className="border-b border-orange-100 bg-orange-50 px-5 py-3 text-center text-sm text-slate-700">
-        Đang duyệt thiết kế mới cho website. <a className="font-semibold text-orange-800 underline" href={`${window.location.pathname}?demo=1#/`}>Xem bản demo và thử chỉnh sửa →</a>
-      </div>
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:py-12">
-        {error && <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          {error}{content && ' Đang hiển thị nội dung đã tải trước đó.'}
-          <button type="button" disabled={loading} onClick={() => { void refresh(true); }} className="ml-3 font-semibold underline disabled:opacity-50">Thử lại</button>
-        </div>}
-        {page}
-      </main>
-      <Footer name={name} />
-    </div>
-  );
+  async function signOut() { if (editing) await editor.discard(); logoutAdmin(); }
+  function requestLogout() {
+    if (dirty) setConfirmation({ title: 'Đăng xuất khi chưa lưu?', text: 'Các thay đổi chưa Save sẽ bị bỏ khi bạn đăng xuất.', confirm: 'Bỏ thay đổi và đăng xuất', action: signOut });
+    else void signOut();
+  }
+  const activeProject = data?.posts.posts.find((project) => path === `/projects/${project.slug}`);
+  let page;
+  if (path === '/admin') page = <div className="site-container site-section"><AdminLogin /></div>;
+  else if (!data) page = <section className="site-container site-section"><h1>Thiên Thời Lâm Đồng</h1><p role="status">{editor.loading ? 'Đang tải nội dung…' : 'Chưa tải được nội dung. Vui lòng thử lại.'}</p></section>;
+  else switch (path) {
+    case '/': page = <Home editor={editor} />; break;
+    case '/about': page = <About editor={editor} />; break;
+    case '/services': page = <Services editor={editor} />; break;
+    case '/projects': page = <Projects editor={editor} />; break;
+    case '/contact': page = <Contact editor={editor} />; break;
+    default: page = path.startsWith('/projects/') ? <ProjectDetail project={activeProject} editor={editor} onDelete={() => {
+      if (activeProject) setConfirmation({ title: 'Xóa dự án này?', text: 'Dự án được bỏ khỏi bản nháp và chỉ xóa khỏi website khi Save. Ảnh gốc không bị xóa.', confirm: 'Xóa khỏi bản nháp', action: () => editor.removeProject(activeProject.id) });
+    }} /> : <section className="site-container site-section"><h1>Không tìm thấy trang</h1><a href="#/" className="site-text-link">Về trang chủ</a></section>;
+  }
+  return <div className={`site ${admin ? 'site-admin' : ''} ${editing ? 'site-editing' : ''}`}>
+    <a className="site-skip" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>Đến nội dung chính</a>
+    {data && <Header site={data.site} path={path} />}
+    {editor.error && <div className="site-container site-error" role="alert">{editor.error}{!editing && <button disabled={editor.loading} onClick={() => { void editor.refresh(true); }}>Thử tải lại</button>}</div>}
+    <main id="main-content" tabIndex={-1}><fieldset className="site-content" disabled={busy} aria-busy={busy}>{page}</fieldset></main>
+    {data && <Footer site={data.site} />}
+    {admin && <div className="site-editor" role="region" aria-label="Công cụ chỉnh sửa"><div className="site-editor-info"><span className="site-editor-dot" /><div><strong>{busy ? 'Đang xử lý…' : editing ? 'Đang chỉnh sửa' : `Quản trị: ${admin.login}`}<span>{editing && dirty ? ' · Chưa lưu' : ''}</span></strong><small>{editing ? 'Nhấn Save để lưu nội dung lên website' : 'Chỉnh sửa trực tiếp nội dung trên trang'}</small></div></div>
+      <div className="site-editor-actions">{editing ? <><button disabled={busy} onClick={discard} className="site-editor-cancel">Cancel</button><button disabled={busy || !dirty} onClick={() => { void editor.save(); }} className="site-button site-button-orange"><Icon name="check" size={17} /> {busy ? 'Đang lưu…' : 'Save'}</button><button disabled={busy} aria-label="Exit Edit Mode" title="Exit Edit Mode" onClick={discard} className="site-editor-exit"><Icon name="close" /></button></>
+        : <><button disabled={busy} onClick={() => { void editor.enterEdit(); }} className="site-button site-button-dark"><Icon name="edit" size={17} /> Edit</button><button disabled={busy} onClick={requestLogout} className="site-editor-cancel">Đăng xuất</button></>}
+        {editor.orphanCount > 0 && <button disabled={busy} onClick={() => { void editor.cleanOrphans(); }} className="site-editor-cancel">Dọn ảnh chưa dùng ({editor.orphanCount})</button>}
+      </div></div>}
+    {editor.message && <div className="site-toast is-visible" role="status"><span>{editor.message}</span><button onClick={editor.clearMessage} aria-label="Đóng thông báo"><Icon name="close" size={16} /></button></div>}
+    <dialog className="site-dialog" ref={dialog} onCancel={() => setConfirmation(null)}><h2>{confirmation?.title}</h2><p>{confirmation?.text}</p><div><button className="site-button site-button-outline" onClick={() => setConfirmation(null)}>Quay lại</button><button className="site-button site-button-dark" onClick={() => { const action = confirmation?.action; setConfirmation(null); void action?.(); }}>{confirmation?.confirm}</button></div></dialog>
+  </div>;
 }

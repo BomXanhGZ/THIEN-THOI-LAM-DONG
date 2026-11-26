@@ -1,5 +1,5 @@
 import { githubConfig } from './config.ts';
-import { isProjectImagePath, parsePosts, parseSite } from './content.ts';
+import { isProjectImagePath, isPublicImagePath, parsePosts, parseSite } from './content.ts';
 import type { PostsData, SiteData } from './content.ts';
 
 const repository = `/repos/${encodeURIComponent(githubConfig.owner)}/${encodeURIComponent(githubConfig.repo)}`;
@@ -183,15 +183,18 @@ export class ImageUploadError extends Error {
   }
 }
 
-export async function uploadProjectImages(projectId: string, files: File[], token: string): Promise<UploadedImage[]> {
-  requireToken(token);
-  if (!/^[a-zA-Z0-9_-]+$/.test(projectId)) throw new Error('ID dự án không hợp lệ.');
-  // Validate the entire selection before creating any files.
+export function validateImageFiles(files: File[]) {
   for (const file of files) {
     if (!imageExtensions[file.type] || file.size === 0 || file.size > MAX_IMAGE_SIZE) {
       throw new Error('Chỉ chấp nhận JPEG, PNG, WebP, AVIF có dung lượng tối đa 8 MB mỗi ảnh.');
     }
   }
+}
+
+export async function uploadProjectImages(projectId: string, files: File[], token: string): Promise<UploadedImage[]> {
+  requireToken(token);
+  if (!/^[a-zA-Z0-9_-]+$/.test(projectId)) throw new Error('ID dự án không hợp lệ.');
+  validateImageFiles(files);
   const uploaded: UploadedImage[] = [];
   try {
     // Contents API writes are intentionally sequential to avoid branch conflicts.
@@ -218,7 +221,7 @@ export async function deleteProjectImage(image: UploadedImage, token: string) {
 }
 
 export function projectImageUrl(path: string) {
-  if (!isProjectImagePath(path)) throw new Error('Đường dẫn ảnh không hợp lệ.');
+  if (!isPublicImagePath(path)) throw new Error('Đường dẫn ảnh không hợp lệ.');
   // UUID filenames are immutable: new images get a new URL and never need a Pages deploy.
   const parts = [githubConfig.owner, githubConfig.repo, githubConfig.branch, ...path.split('/')];
   return `https://raw.githubusercontent.com/${parts.map(encodeURIComponent).join('/')}`;

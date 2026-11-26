@@ -1,23 +1,27 @@
-import type { Project, SiteData } from '../content.ts';
+import type { ContentEditor } from '../useContentEditor.ts';
+import { Field, Icon, SectionTitle } from '../components/Website.tsx';
 import ProjectCard from '../components/ProjectCard.tsx';
+import { AboutContent } from './About.tsx';
+import { ServiceCards } from './Services.tsx';
 
-export default function Home({ site, posts }: { site: SiteData; posts: Project[] }) {
-  const featured = posts.filter((post) => post.featured).slice(0, 3);
-  return (
-    <>
-      <section className="rounded-xl border border-slate-200 bg-white p-6 sm:p-10">
-        <h1 className="text-3xl font-bold text-sky-950 sm:text-4xl">{site.company.name}</h1>
-        {site.company.description && <p className="mt-4 max-w-2xl leading-7 text-slate-600">{site.company.description}</p>}
-        <a href="#/projects" className="mt-6 inline-block rounded-md bg-sky-800 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-900">
-          Xem dự án
-        </a>
-      </section>
-      <section className="mt-10" aria-labelledby="featured-title">
-        <h2 id="featured-title" className="mb-5 text-2xl font-semibold">Công trình tiêu biểu</h2>
-        {featured.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {featured.map((post) => <ProjectCard key={post.id} project={post} />)}
-        </div> : <p className="text-slate-600">Chưa có công trình được đăng.</p>}
-      </section>
-    </>
-  );
+export default function Home({ editor }: { editor: ContentEditor }) {
+  const { data, editing, updateCompany, imageSrc } = editor;
+  if (!data) return null;
+  const { site, posts } = data;
+  const featured = posts.posts.filter((post) => post.featured).slice(0, 3);
+  return <>
+    <section className="site-hero">{site.media?.hero && <img className="site-hero-image" src={imageSrc(site.media.hero)} alt="Hình ảnh công trình Thiên Thời Lâm Đồng" fetchPriority="high" width="1536" height="1024" />}<div className="site-hero-shade" />
+      <div className="site-container site-hero-content"><p className="site-eyebrow"><span /> {site.company.name.toUpperCase()}</p>
+        <h1><Field value={site.company.headline ?? site.company.description} onChange={(value) => updateCompany('headline', value)} editing={editing} label="Tiêu đề trang chủ" multiline /></h1>
+        <div className="site-hero-description"><Field value={site.company.description} onChange={(value) => updateCompany('description', value)} editing={editing} label="Mô tả trang chủ" multiline /></div>
+        <div className="site-hero-actions"><a href="#/projects" className="site-button site-button-orange">Khám phá công trình <Icon name="arrow" /></a><a href="#/contact" className="site-hero-secondary">Liên hệ với chúng tôi <span>↗</span></a></div>
+      </div>
+    </section>
+    <div className="site-discipline"><div className="site-container">{['Thi công điện', 'Thi công nước', 'Thi công xây dựng'].map((label, index) => <span key={label}><Icon name={['bolt', 'water', 'building'][index]} />{label}<small>0{index + 1}</small></span>)}</div></div>
+    <section className="site-container site-section"><SectionTitle eyebrow="LĨNH VỰC HOẠT ĐỘNG" title="Các hạng mục thi công"><a href="#/services" className="site-text-link">Tất cả dịch vụ <Icon name="arrow" /></a></SectionTitle><ServiceCards editor={editor} /></section>
+    <section className="site-about-section"><div className="site-container site-section"><AboutContent editor={editor} /></div></section>
+    <section className="site-container site-section"><SectionTitle eyebrow="DỰ ÁN & CÔNG TRÌNH" title="Hình ảnh từ công trình"><a href="#/projects" className="site-text-link">Xem tất cả dự án <Icon name="arrow" /></a></SectionTitle>
+      {featured.length ? <div className="site-project-grid">{featured.map((project, index) => <ProjectCard key={project.id} project={project} index={index} imageSrc={imageSrc} />)}</div> : <p className="site-muted">Các công trình tiêu biểu sẽ được cập nhật tại đây.</p>}
+    </section>
+  </>;
 }

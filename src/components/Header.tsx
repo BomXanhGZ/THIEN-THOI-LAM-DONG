@@ -1,31 +1,26 @@
-import { logoutAdmin, useAdminSession } from '../auth.ts';
+import { useEffect, useState } from 'react';
+import type { SiteData } from '../content.ts';
+import { projectImageUrl } from '../github.ts';
+import { Icon, phoneHref } from './Website.tsx';
 
-const links = [
-  ['/', 'Trang chủ'], ['/about', 'Giới thiệu'], ['/services', 'Dịch vụ'],
-  ['/projects', 'Dự án'], ['/contact', 'Liên hệ'],
-];
+export const navigation = [['/', 'Trang chủ'], ['/about', 'Giới thiệu'], ['/services', 'Dịch vụ'], ['/projects', 'Dự án'], ['/contact', 'Liên hệ']];
 
-export default function Header({ name, path }: { name: string; path: string }) {
-  const admin = useAdminSession();
-  return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5">
-        <a href="#/" className="text-xl font-bold text-sky-900">{name}</a>
-        <nav aria-label="Điều hướng chính" className="flex flex-wrap gap-x-5 gap-y-3 text-sm">
-          {links.map(([href, label]) => (
-            <a key={href} href={`#${href}`} aria-current={path === href ? 'page' : undefined}
-              className={path === href ? 'font-semibold text-sky-800' : 'text-slate-600 hover:text-sky-800'}>
-              {label}
-            </a>
-          ))}
-        </nav>
-      </div>
-      {admin && (
-        <div className="flex flex-wrap items-center justify-center gap-4 bg-sky-50 px-5 py-2 text-sm">
-          <span>Đã đăng nhập: {admin.login}</span>
-          <button type="button" onClick={logoutAdmin} className="underline">Đăng xuất</button>
-        </div>
-      )}
-    </header>
-  );
+export default function Header({ site, path }: { site: SiteData; path: string }) {
+  const [menu, setMenu] = useState(false);
+  useEffect(() => { setMenu(false); }, [path]);
+  return <>
+    <div className="site-topbar"><div className="site-container"><span>{site.company.tagline}</span>
+      <a href={phoneHref(site.company.phone)}>Hotline: {site.company.phone}</a></div></div>
+    <header className="site-header"><div className="site-container">
+      <a className="site-brand" href="#/" aria-label={`${site.company.name} — Trang chủ`}>
+        {site.media?.logo && <span className="site-logo-window"><img src={projectImageUrl(site.media.logo)} alt={`Logo ${site.company.name}`} /></span>}
+        <span>{site.company.name}<small>ĐIỆN NƯỚC & THI CÔNG</small></span>
+      </a>
+      <nav className={menu ? 'is-open' : ''} aria-label="Điều hướng chính">
+        {navigation.map(([href, label]) => <a key={href} href={`#${href}`} className={path === href || (href === '/projects' && path.startsWith('/projects/')) ? 'is-active' : ''} aria-current={path === href ? 'page' : undefined}>{label}</a>)}
+      </nav>
+      <a className="site-header-cta" href="#/contact">Trao đổi công trình <Icon name="arrow" size={16} /></a>
+      <button className="site-menu-button" onClick={() => setMenu(!menu)} aria-label={menu ? 'Đóng menu' : 'Mở menu'} aria-expanded={menu}><Icon name={menu ? 'close' : 'menu'} /></button>
+    </div></header>
+  </>;
 }

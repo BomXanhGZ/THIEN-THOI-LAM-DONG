@@ -1,18 +1,10 @@
 import type { Project } from '../content.ts';
-import { projectImageUrl } from '../github.ts';
+import { Icon } from './Website.tsx';
 
-export default function ProjectCard({ project }: { project: Project }) {
-  const image = project.images[0];
-  return (
-    <article className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <a href={`#/projects/${encodeURIComponent(project.slug)}`} className="block h-full">
-        {image && <img src={projectImageUrl(image.path)} alt={image.alt} loading="lazy" decoding="async"
-          width="800" height="500" className="aspect-[8/5] w-full object-cover" />}
-        <div className="p-5">
-          <h2 className="text-lg font-semibold text-slate-900">{project.title}</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{project.summary}</p>
-        </div>
-      </a>
-    </article>
-  );
+export default function ProjectCard({ project, index, imageSrc }: { project: Project; index: number; imageSrc: (path: string) => string }) {
+  return <a className="site-project" href={`#/projects/${project.slug}`}>
+    <div className="site-project-image">{project.images[0] ? <img src={imageSrc(project.images[0].path)} alt={project.images[0].alt || project.title} loading="lazy" width="1000" height="700" /> : <div className="site-image-empty">Chưa có hình ảnh</div>}<span className="site-project-arrow"><Icon name="arrow" /></span></div>
+    <div className="site-project-meta"><span>{project.category || 'Công trình'}</span><span>{String(index + 1).padStart(2, '0')}</span></div>
+    <h3>{project.title}</h3><p>{project.summary}</p>
+  </a>;
 }

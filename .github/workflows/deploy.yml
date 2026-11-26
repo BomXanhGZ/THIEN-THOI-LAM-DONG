@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -48,6 +49,33 @@ jobs:
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: dist
+      - name: Wait for Pages artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.request
+
+          url = f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}/artifacts"
+          request = urllib.request.Request(url, headers={
+              'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+              'Accept': 'application/vnd.github+json',
+              'User-Agent': 'pages-artifact-readiness',
+          })
+          for attempt in range(12):
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  artifacts = json.load(response)['artifacts']
+              if any(item['name'] == 'github-pages' and not item['expired'] for item in artifacts):
+                  print('Pages artifact metadata is available.')
+                  break
+              print(f'Waiting for Pages artifact metadata ({attempt + 1}/12)...')
+              time.sleep(5)
+          else:
+              raise SystemExit('Pages artifact was uploaded but its metadata is not available.')
+          PY
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

@@ -13,6 +13,7 @@ export interface Project {
   featured: boolean;
   createdAt: string;
   updatedAt: string;
+  category?: string;
 }
 
 export interface PostsData {
@@ -30,8 +31,15 @@ export interface SiteData {
     phone: string;
     email: string;
     address: string;
+    legalName?: string;
+    phoneSecondary?: string;
+    fanpage?: string;
+    fanpageUrl?: string;
+    headline?: string;
+    tagline?: string;
   };
   services: { id: string; title: string; description: string }[];
+  media?: { logo: string; hero: string; about: string };
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -44,6 +52,11 @@ function strings(value: Record<string, unknown>, keys: string[]) {
 
 export function isProjectImagePath(path: string) {
   return /^public\/images\/projects\/[a-zA-Z0-9_/-]+\.(jpe?g|png|webp|avif)$/i.test(path)
+    && !path.includes('//');
+}
+
+export function isPublicImagePath(path: string) {
+  return /^public\/images\/[a-zA-Z0-9_/-]+\.(jpe?g|png|webp|avif)$/i.test(path)
     && !path.includes('//');
 }
 
@@ -62,9 +75,10 @@ export function parsePosts(value: unknown): PostsData {
       || !Number.isFinite(Date.parse(post.createdAt as string))
       || !Number.isFinite(Date.parse(post.updatedAt as string))
       || typeof post.featured !== 'boolean'
+      || (post.category !== undefined && typeof post.category !== 'string')
       || !Array.isArray(post.images)
       || !post.images.every((image: unknown) => record(image)
-        && strings(image, ['path', 'alt']) && isProjectImagePath(image.path as string))) {
+        && strings(image, ['path', 'alt']) && isPublicImagePath(image.path as string))) {
       throw new Error('Dữ liệu dự án không hợp lệ. Kiểm tra các trường và đường dẫn ảnh.');
     }
     if (ids.has(post.id as string) || slugs.has(post.slug as string)) {
@@ -81,6 +95,23 @@ export function parseSite(value: unknown): SiteData {
     || !strings(value.company, ['name', 'description', 'about', 'experience', 'phone', 'email', 'address'])
     || !(value.company.name as string).trim() || !Array.isArray(value.services)) {
     throw new Error('Cấu trúc data/site.json không hợp lệ.');
+  }
+  for (const key of ['legalName', 'phoneSecondary', 'fanpage', 'fanpageUrl', 'headline', 'tagline']) {
+    if (value.company[key] !== undefined && typeof value.company[key] !== 'string') {
+      throw new Error('Thông tin công ty không hợp lệ.');
+    }
+  }
+  if (value.company.fanpageUrl && (typeof value.company.fanpageUrl !== 'string'
+    || !/^https:\/\/(?:www\.)?facebook\.com\/[a-zA-Z0-9./?=&_%+-]+$/.test(value.company.fanpageUrl))) {
+    throw new Error('Link fanpage phải là địa chỉ https://facebook.com hợp lệ.');
+  }
+  if (typeof value.company.headline === 'string' && !value.company.headline.trim()) {
+    throw new Error('Tiêu đề trang chủ không được để trống.');
+  }
+  if (value.media !== undefined && (!record(value.media)
+    || !['logo', 'hero', 'about'].every((key) => typeof (value.media as Record<string, unknown>)[key] === 'string'
+      && isPublicImagePath((value.media as Record<string, string>)[key])))) {
+    throw new Error('Đường dẫn ảnh nhận diện không hợp lệ.');
   }
   const ids = new Set<string>();
   for (const service of value.services) {

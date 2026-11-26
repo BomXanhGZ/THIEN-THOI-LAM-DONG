@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   return {
-    base: env.VITE_BASE_PATH || '/kenlythoi-webSite/',
+    base: env.VITE_BASE_PATH || '/THIEN-THOI-LAM-DONG/',
     plugins: [react(), tailwindcss()],
   };
 });

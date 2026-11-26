@@ -1,8 +1,8 @@
-﻿# KenlyThoi — Demo
+﻿# THIEN-THOI-LAM-DONG — Demo
 
 ## Mở demo
 
-**Online:** https://bomxanhgz.github.io/kenlythoi-webSite/?demo=1#/
+**Online:** https://bomxanhgz.github.io/THIEN-THOI-LAM-DONG/?demo=1#/
 
 Demo có 4 bài đăng mẫu và 6 ảnh từ thư mục `img-demo`.
 
@@ -18,29 +18,29 @@ Demo không cần token, không ghi lên GitHub. Tải lại trang sẽ khôi ph
 Dùng Node.js 24.13+ trong nhánh 24.x. Mở **PowerShell**, chuyển vào thư mục dự án rồi chạy:
 
 ```powershell
-cd "E:\BomXanhG-Z_File\kenlythoi-webSite"
+cd "E:\BomXanhG-Z_File\THIEN-THOI-LAM-DONG"
 npm ci
 npm run dev
 ```
 
-Mở http://localhost:5173/kenlythoi-webSite/?demo=1#/
+Mở http://localhost:5173/THIEN-THOI-LAM-DONG/?demo=1#/
 
 ## Kiểm tra và build
 
 ```powershell
-cd "E:\BomXanhG-Z_File\kenlythoi-webSite"
+cd "E:\BomXanhG-Z_File\THIEN-THOI-LAM-DONG"
 npm test
 npm run build
 npm run preview
 ```
 
 Bản build nằm trong `dist/`. Mở preview tại:
-http://localhost:4173/kenlythoi-webSite/?demo=1#/
+http://localhost:4173/THIEN-THOI-LAM-DONG/?demo=1#/
 
 ## Deploy
 
 ```powershell
-cd "E:\BomXanhG-Z_File\kenlythoi-webSite"
+cd "E:\BomXanhG-Z_File\THIEN-THOI-LAM-DONG"
 git add .
 git commit -m "Update website demo"
 git push origin main

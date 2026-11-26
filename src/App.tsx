@@ -47,7 +47,7 @@ export default function App() {
 
   useEffect(() => { void refresh(); }, [refresh, path]);
 
-  const name = content?.site.company.name || 'KenlyThoi';
+  const name = content?.site.company.name || 'THIEN-THOI-LAM-DONG';
   let page;
   if (path === '/admin') page = <AdminLogin />;
   else if (!content) page = !error ? <p role="status">Đang tải nội dung…</p> : null;

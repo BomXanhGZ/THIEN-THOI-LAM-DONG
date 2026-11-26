@@ -45,7 +45,7 @@ test('tracked data matches schema; 30 projects and many images are supported', a
 
 test('public JSON reads decode UTF-8, cache clones, and revalidate with ETag', async () => {
   let calls = 0;
-  const value = { ...site, company: { ...site.company, name: 'KenlyThoi — Điện nước 日本語' } };
+  const value = { ...site, company: { ...site.company, name: 'THIEN-THOI-LAM-DONG — Điện nước 日本語' } };
   globalThis.fetch = async (input, init) => {
     calls += 1;
     assert.match(String(input), /\/contents\/data\/site.json\?ref=main$/);
@@ -190,7 +190,7 @@ test('uploads use unique raw GitHub image paths and sequential writes', async ()
   assert.equal(uploaded.length, 2);
   assert.notEqual(uploaded[0].path, uploaded[1].path);
   const url = projectImageUrl(uploaded[0].path);
-  assert.match(url, /^https:\/\/raw\.githubusercontent\.com\/BomXanhGZ\/kenlythoi-webSite\/main\/public\/images\/projects\/project-1\//);
+  assert.match(url, /^https:\/\/raw\.githubusercontent\.com\/BomXanhGZ\/THIEN-THOI-LAM-DONG\/main\/public\/images\/projects\/project-1\//);
   assert.throws(() => projectImageUrl('public/images/projects/../secret.jpg'), /không hợp lệ/);
 });
 

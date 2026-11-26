@@ -3,6 +3,6 @@ const env = import.meta.env ?? {};
 
 export const githubConfig = {
   owner: env.VITE_GITHUB_OWNER || 'BomXanhGZ',
-  repo: env.VITE_GITHUB_REPO || 'kenlythoi-webSite',
+  repo: env.VITE_GITHUB_REPO || 'THIEN-THOI-LAM-DONG',
   branch: env.VITE_GITHUB_BRANCH || 'main',
 };

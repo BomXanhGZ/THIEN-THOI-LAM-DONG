@@ -183,7 +183,7 @@ Email, URL fanpage và số năm kinh nghiệm không có trong ảnh; để tr�
 | Build và TypeScript | Đạt | `npm run build` |
 | Kiểm thử trình duyệt | Đã kiểm tra với GitHub giả lập | Các trang tại 320/375/768/1440 px; đăng nhập, sửa, lưu, hủy, xóa, xung đột và 30 dự án × 10 ảnh |
 | Nội dung cần bổ sung | Còn thiếu dữ kiện | Email, URL fanpage, năng lực/kinh nghiệm cụ thể và tên chính thức của từng công trình |
-| GitHub Pages | Deploy thành công | Commit `8f9c5c1`, [Actions run 45783910936](https://github.com/BomXanhGZ/THIEN-THOI-LAM-DONG/actions/runs/45783910936); bước chờ artifact và Deploy đều đạt |
+| GitHub Pages | Deploy thành công | Commit `6a5f348`, [Actions run 45784802911](https://github.com/BomXanhGZ/THIEN-THOI-LAM-DONG/actions/runs/45784802911); triển khai trực tiếp bằng ID artifact và OIDC đã đạt |
 | Website online | Đã kiểm tra trên trình duyệt thật | Trang chủ, logo, ba nhóm ảnh và thông tin liên hệ đọc đúng từ GitHub; 20 file phát hành được đối chiếu với build local |
 | Nghiệm thu ghi dữ liệu thật từ trình duyệt | Còn cần | Kiểm tra bằng token quản trị thực tế sau deploy; test giả lập không thay thế nghiệm thu này |
 

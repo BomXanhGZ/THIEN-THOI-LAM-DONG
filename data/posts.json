@@ -103,6 +103,23 @@
       "featured": true,
       "createdAt": "2026-11-26T00:00:00Z",
       "updatedAt": "2026-11-26T00:00:00Z"
+    },
+    {
+      "id": "cong-trinh-2d8f814f-57ac-4e0b-ba79-87d098d638ca",
+      "slug": "cong-trinh-2d8f814f-57ac-4e0b-ba79-87d098d638ca",
+      "title": "[KIỂM THỬ TẠM] 5daa2d70",
+      "summary": "Bài kiểm thử chức năng, sẽ được dọn ngay sau phiên test.",
+      "content": "Kiểm tra lưu thực tế từ giao diện quản trị.",
+      "images": [
+        {
+          "path": "public/images/projects/cong-trinh-2d8f814f-57ac-4e0b-ba79-87d098d638ca/9126134c-be26-46aa-a7e2-a1d7c3014f90.png",
+          "alt": "[KIỂM THỬ TẠM] 5daa2d70"
+        }
+      ],
+      "featured": false,
+      "category": "Kiểm thử tạm",
+      "createdAt": "2026-11-28T02:51:35.817Z",
+      "updatedAt": "2026-11-28T02:51:35.891Z"
     }
   ]
 }

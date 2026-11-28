@@ -23,8 +23,8 @@ test('admin snapshot pins both JSON documents to the same immutable head', async
 test('Save publishes JSON and images atomically with one non-force update, preserving source', async () => {
   const state = setup(); state.draft.site.company.name = 'Saved company';
   state.pending.set('pending:photo', photo()); state.draft.posts.posts[0].images.push({ path: 'pending:photo', alt: 'photo' });
-  const before = state.github.head;
-  state.github.beforePatch = () => { assert.equal(state.github.head, before); assert.equal(Object.keys(state.github.files()).filter((path) => path.includes('/projects/')).length, 0); assert.ok(state.plan); };
+  const before = state.github.head, originalFiles = structuredClone(state.github.files());
+  state.github.beforePatch = () => { assert.equal(state.github.head, before); assert.deepEqual(state.github.files(), originalFiles); assert.ok(state.plan); };
   const result = await state.save();
   assert.equal(result.snapshot.head, state.github.head);
   assert.equal(state.github.calls.filter((call) => call.method === 'PATCH').length, 1);

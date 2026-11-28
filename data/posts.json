@@ -103,29 +103,24 @@
       "featured": true,
       "createdAt": "2026-11-26T00:00:00Z",
       "updatedAt": "2026-11-26T00:00:00Z"
+    },
+    {
+      "id": "cong-trinh-d68cad3b-c4d8-4414-9eea-d2d044732108",
+      "slug": "cong-trinh-d68cad3b-c4d8-4414-9eea-d2d044732108",
+      "title": "[KIỂM THỬ TẠM] 510d9933 đã sửa",
+      "summary": "Bài kiểm thử chức năng, sẽ được dọn ngay sau phiên test.",
+      "content": "Nội dung đã sửa trong phiên kiểm thử.",
+      "images": [
+        {
+          "path": "public/images/projects/cong-trinh-d68cad3b-c4d8-4414-9eea-d2d044732108/d91d0870-904c-441a-bbb6-57882f0a72ab.png",
+          "alt": "[KIỂM THỬ TẠM] 510d9933"
+        }
+      ],
+      "featured": false,
+      "category": "Kiểm thử tạm",
+      "createdAt": "2026-11-28T02:54:34.517Z",
+      "updatedAt": "2026-11-28T02:55:05.921Z"
     }
   ],
-  "trash": [
-    {
-      "project": {
-        "id": "cong-trinh-d68cad3b-c4d8-4414-9eea-d2d044732108",
-        "slug": "cong-trinh-d68cad3b-c4d8-4414-9eea-d2d044732108",
-        "title": "[KIỂM THỬ TẠM] 510d9933 đã sửa",
-        "summary": "Bài kiểm thử chức năng, sẽ được dọn ngay sau phiên test.",
-        "content": "Nội dung đã sửa trong phiên kiểm thử.",
-        "images": [
-          {
-            "path": "public/images/projects/cong-trinh-d68cad3b-c4d8-4414-9eea-d2d044732108/d91d0870-904c-441a-bbb6-57882f0a72ab.png",
-            "alt": "[KIỂM THỬ TẠM] 510d9933"
-          }
-        ],
-        "featured": false,
-        "category": "Kiểm thử tạm",
-        "createdAt": "2026-11-28T02:54:34.517Z",
-        "updatedAt": "2026-11-28T02:54:44.396Z"
-      },
-      "index": 3,
-      "deletedAt": "2026-11-28T02:54:56.200Z"
-    }
-  ]
+  "trash": []
 }

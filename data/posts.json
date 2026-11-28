@@ -107,19 +107,19 @@
     {
       "id": "cong-trinh-2d8f814f-57ac-4e0b-ba79-87d098d638ca",
       "slug": "cong-trinh-2d8f814f-57ac-4e0b-ba79-87d098d638ca",
-      "title": "[KIỂM THỬ TẠM] 5daa2d70",
+      "title": "[KIỂM THỬ TẠM] 5daa2d70 đã sửa",
       "summary": "Bài kiểm thử chức năng, sẽ được dọn ngay sau phiên test.",
-      "content": "Kiểm tra lưu thực tế từ giao diện quản trị.",
+      "content": "Nội dung đã sửa trong phiên kiểm thử.",
       "images": [
         {
-          "path": "public/images/projects/cong-trinh-2d8f814f-57ac-4e0b-ba79-87d098d638ca/9126134c-be26-46aa-a7e2-a1d7c3014f90.png",
+          "path": "public/images/projects/cong-trinh-2d8f814f-57ac-4e0b-ba79-87d098d638ca/d6401edd-0d05-4db7-ac96-cb877d8502a2.png",
           "alt": "[KIỂM THỬ TẠM] 5daa2d70"
         }
       ],
       "featured": false,
       "category": "Kiểm thử tạm",
       "createdAt": "2026-11-28T02:51:35.817Z",
-      "updatedAt": "2026-11-28T02:51:35.891Z"
+      "updatedAt": "2026-11-28T02:51:45.279Z"
     }
   ]
 }

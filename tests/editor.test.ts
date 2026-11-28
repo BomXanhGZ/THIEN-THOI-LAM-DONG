@@ -1,171 +1,145 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
-import { readFile } from 'node:fs/promises';
-import { contentDraft, persistDraft } from '../src/editor.ts';
-import type { ContentSnapshot, PendingImage } from '../src/editor.ts';
-import { parsePosts, parseSite, siteImagePaths, SITE_IMAGE_KEYS } from '../src/content.ts';
+import { contentDraft, persistDraft, readEditorSnapshot, moveToTrash, restoreProject, purgeProject, UncertainSaveError, RejectedSaveError } from '../src/editor.ts';
+import type { PendingImage, SavePlan } from '../src/editor.ts';
+import { clearContentCache, GitHubError, readSite } from '../src/github.ts';
+import { GitFixture, fixturePosts } from './gitFixture.ts';
 import type { PostsData } from '../src/content.ts';
-import { clearContentCache, deleteProjectImage, projectImageUrl } from '../src/github.ts';
-
 const originalFetch = globalThis.fetch;
-const publishedSite = parseSite(JSON.parse(await readFile(new URL('../data/site.json', import.meta.url), 'utf8')));
-const publishedPosts = parsePosts(JSON.parse(await readFile(new URL('../data/posts.json', import.meta.url), 'utf8')));
-// Editor tests use fixtures so legitimate admin edits or an empty project list cannot break CI.
-const site = parseSite({ schemaVersion: 1, company: { name: 'Công ty kiểm thử', description: '', about: '', experience: '', phone: '', address: '' },
-  services: [], media: { logo: 'public/images/logo.png', hero: 'public/images/5.png', about: 'public/images/f.png', logoLayout: 'board' } });
-const posts: PostsData = { schemaVersion: 1, posts: [{ id: 'fixture', slug: 'fixture', title: 'Công trình kiểm thử', summary: '', content: '',
-  images: [{ path: 'public/images/1.png', alt: '' }], featured: false, createdAt: '2026-11-26T00:00:00Z', updatedAt: '2026-11-26T00:00:00Z' }] };
-function initial(): ContentSnapshot {
-  return structuredClone({ site: { data: site, sha: 'site-old' }, posts: { data: posts, sha: 'posts-old' } });
-}
-function response(value: unknown, status = 200) {
-  return new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } });
-}
 afterEach(() => { globalThis.fetch = originalFetch; clearContentCache(); });
-
-test('unchanged content is not written, and validation precedes all uploads and writes', async () => {
-  globalThis.fetch = async () => { throw new Error('Unexpected write'); };
-  const snapshot = initial();
-  const unchanged = contentDraft(snapshot);
-  const options = { snapshot, draft: unchanged, pending: new Map<string, PendingImage>(), token: 'fixture', acknowledge: () => {}, uploaded: () => {} };
-  assert.deepEqual((await persistDraft(options)).snapshot, snapshot);
-  const invalid = contentDraft(snapshot);
-  invalid.site.company.name = 'New company';
-  invalid.posts.posts[0].title = '';
-  await assert.rejects(persistDraft({ ...options, draft: invalid }), /không hợp lệ/);
+function setup() {
+  const github = new GitFixture(); globalThis.fetch = github.fetch;
+  const snapshot = github.snapshot(), draft = contentDraft(snapshot), pending = new Map<string, PendingImage>();
+  let plan: SavePlan | undefined;
+  const save = () => persistDraft({ snapshot, draft, pending, token: 'fixture', plan,
+    checkpoint: async () => {}, planned: async (next) => { plan = next; } });
+  return { github, snapshot, draft, pending, save, get plan() { return plan; } };
+}
+function photo() { return { file: new File(['photo'], 'photo.png', { type: 'image/png' }), url: 'blob:photo' }; }
+test('admin snapshot pins both JSON documents to the same immutable head', async () => {
+  const state = setup(); assert.deepEqual(await readEditorSnapshot('fixture'), state.snapshot);
+  assert.equal(state.github.calls.filter((call) => call.path.startsWith('/contents/')).length, 2);
 });
-
-test('retry after partial JSON success retains the updated SHA and does not rewrite saved company data', async () => {
-  let snapshot = initial();
-  let draft = contentDraft(snapshot);
-  draft.site.company.about += ' Updated.';
-  draft.posts.posts[0].summary += ' Updated.';
-  const writes: string[] = [];
-  let conflict = true;
-  globalThis.fetch = async (input, init) => {
-    const url = String(input);
-    assert.equal(init?.method, 'PUT');
-    writes.push(url);
-    const body = JSON.parse(String(init.body));
-    if (url.endsWith('/data/site.json')) {
-      assert.equal(body.sha, 'site-old');
-      return response({ content: { sha: 'site-new' } }, 201);
-    }
-    assert.equal(body.sha, 'posts-old');
-    return conflict ? response({}, 409) : response({ content: { sha: 'posts-new' } }, 201);
-  };
-  const save = () => persistDraft({ snapshot, draft, pending: new Map(), token: 'fixture',
-    acknowledge: (next, nextDraft) => { snapshot = next; draft = nextDraft; }, uploaded: () => {},
-  });
-  await assert.rejects(save(), /xung đột/);
-  assert.equal(snapshot.site.sha, 'site-new');
-  assert.notEqual(draft.posts.posts[0].summary, snapshot.posts.data.posts[0].summary);
-  conflict = false;
-  const result = await save();
-  assert.equal(result.snapshot.posts.sha, 'posts-new');
-  assert.equal(writes.filter((url) => url.endsWith('/data/site.json')).length, 1);
-  assert.equal(writes.filter((url) => url.endsWith('/data/posts.json')).length, 2);
+test('Save publishes JSON and images atomically with one non-force update, preserving source', async () => {
+  const state = setup(); state.draft.site.company.name = 'Saved company';
+  state.pending.set('pending:photo', photo()); state.draft.posts.posts[0].images.push({ path: 'pending:photo', alt: 'photo' });
+  const before = state.github.head;
+  state.github.beforePatch = () => { assert.equal(state.github.head, before); assert.equal(Object.keys(state.github.files()).filter((path) => path.includes('/projects/')).length, 0); assert.ok(state.plan); };
+  const result = await state.save();
+  assert.equal(result.snapshot.head, state.github.head);
+  assert.equal(state.github.calls.filter((call) => call.method === 'PATCH').length, 1);
+  assert.equal(state.github.files()['src/unrelated.ts'], state.github.files(before)['src/unrelated.ts']);
+  assert.equal(state.github.data<{ company: { name: string } }>('data/site.json').company.name, 'Saved company');
+  assert.ok(state.github.files()[result.draft.posts.posts[0].images.at(-1)!.path]);
+  assert.equal((await readSite()).company.name, 'Saved company');
 });
-
-test('successful staged images survive a failed save and are not uploaded again on retry', async () => {
-  let snapshot = initial();
-  let draft = contentDraft(snapshot);
-  draft.posts.posts[0].images.push({ path: 'pending:test-photo', alt: 'Ảnh thực tế' });
-  const pending = new Map<string, PendingImage>([['pending:test-photo', { file: new File(['image'], 'test.jpg', { type: 'image/jpeg' }), url: 'blob:fixture' }]]);
-  let uploads = 0;
-  let saves = 0;
-  globalThis.fetch = async (input, init) => {
-    const url = String(input);
-    assert.equal(init?.method, 'PUT');
-    if (url.includes('/contents/public/images/projects/')) {
-      uploads += 1;
-      return response({ content: { sha: 'photo-sha' } }, 201);
-    }
-    saves += 1;
-    return saves === 1 ? response({}, 403) : response({ content: { sha: 'posts-new' } }, 201);
-  };
-  const save = () => persistDraft({ snapshot, draft, pending, token: 'fixture',
-    acknowledge: (next, nextDraft) => { snapshot = next; draft = nextDraft; },
-    uploaded: (placeholder) => { pending.delete(placeholder); },
-  });
-  await assert.rejects(save(), /từ chối/);
-  assert.equal(uploads, 1);
-  assert.equal(pending.size, 0);
-  assert.ok(draft.posts.posts[0].images.at(-1)?.path.startsWith('public/images/projects/'));
-  await save();
-  assert.equal(uploads, 1);
-  assert.equal(saves, 2);
-});
-
-test('supplied root image paths render but cannot be deleted using the upload cleanup API', async () => {
-  assert.match(projectImageUrl('public/images/logo.png'), /\/main\/public\/images\/logo.png$/);
-  globalThis.fetch = async () => { throw new Error('No delete expected'); };
-  await assert.rejects(deleteProjectImage({ path: 'public/images/logo.png', sha: 'fixture' }, 'fixture'), /không hợp lệ/);
-  for (const path of ['public/images/../secret.jpg', 'public/images//a.png', 'https://example.com/a.jpg']) {
-    assert.throws(() => projectImageUrl(path), /không hợp lệ/);
+test('staging failure publishes nothing; retry reuses the same image path and blob', async () => {
+  for (const failPath of ['/git/trees', '/git/commits']) {
+    const state = setup(), before = state.github.head; state.pending.set('pending:photo', photo());
+    state.draft.posts.posts[0].images.push({ path: 'pending:photo', alt: '' }); state.github.failPath = failPath;
+    await assert.rejects(state.save(), GitHubError); assert.equal(state.github.head, before);
+    const target = state.pending.get('pending:photo')!.target!;
+    assert.ok(target); assert.equal(state.github.files()[target], undefined);
+    state.github.failPath = ''; const result = await state.save();
+    assert.equal(result.draft.posts.posts[0].images.at(-1)!.path, target);
+    assert.equal(state.github.calls.filter((call) => call.path === '/git/blobs' && call.body.content === Buffer.from('photo').toString('base64')).length, 1);
+    clearContentCache();
   }
 });
-
-test('published content references existing image files', async () => {
-  const images = [...siteImagePaths(publishedSite), ...publishedPosts.posts.flatMap((post) => post.images.map((image) => image.path))];
-  for (const path of new Set(images)) {
-    const bytes = await readFile(new URL(`../${path}`, import.meta.url));
-    assert.ok(bytes.length > 0, path);
+test('lost branch-update response is verified as success without a second publication', async () => {
+  const state = setup(); state.draft.site.company.name = 'Acknowledged after loss'; state.github.losePatch = true;
+  const result = await state.save(); assert.equal(result.snapshot.head, state.github.head);
+  assert.equal(state.github.calls.filter((call) => call.method === 'PATCH').length, 1);
+});
+test('offline verification retains the exact commit; retry after reload creates no duplicate', async () => {
+  const state = setup(); state.draft.site.company.name = 'Published offline'; state.github.offlineAfterPatch = true;
+  await assert.rejects(state.save(), UncertainSaveError); assert.ok(state.plan);
+  const plan = structuredClone(state.plan), commits = state.github.commits.size; state.github.offline = false;
+  const result = await persistDraft({ snapshot: state.snapshot, draft: state.draft, pending: new Map(), token: 'fixture', plan, checkpoint: async () => {}, planned: async () => { assert.fail('Must reuse plan'); } });
+  assert.equal(result.snapshot.head, plan.commit); assert.equal(state.github.commits.size, commits);
+  assert.equal(state.github.calls.filter((call) => call.method === 'PATCH').length, 1);
+});
+test('backup failure before publication leaves the live branch unchanged', async () => {
+  const state = setup(), before = state.github.head; state.draft.site.company.name = 'Not published';
+  await assert.rejects(persistDraft({ snapshot: state.snapshot, draft: state.draft, pending: state.pending, token: 'fixture', checkpoint: async () => {}, planned: async () => { throw new Error('Disk full'); } }), /Disk full/);
+  assert.equal(state.github.head, before); assert.equal(state.github.calls.some((call) => call.method === 'PATCH'), false);
+});
+test('stale JSON rejects before staging; a racing admin cannot be overwritten', async () => {
+  const state = setup(); state.draft.site.company.name = 'Mine';
+  const remote = contentDraft(state.snapshot); remote.site.company.name = 'Theirs'; state.github.external(remote.site);
+  await assert.rejects(state.save(), (failure: unknown) => failure instanceof GitHubError && failure.status === 409);
+  assert.equal(state.github.calls.some((call) => call.method === 'POST'), false);
+  const second = setup(); second.draft.site.company.name = 'Mine';
+  second.github.beforePatch = () => { second.github.external(remote.site); };
+  await assert.rejects(second.save(), (failure: unknown) => failure instanceof RejectedSaveError && failure.status === 409);
+  assert.equal(second.github.data<{company:{name:string}}>('data/site.json').company.name, 'Theirs');
+});
+test('soft delete keeps the published post; restore retains its original position', () => {
+  const state = setup(), id = state.draft.posts.posts[1].id;
+  state.draft.posts.posts[1].title = 'Unpublished edit';
+  const deleted = moveToTrash(state.draft.posts, state.snapshot.posts.data, id);
+  assert.equal(deleted.trash![0].project.title, state.snapshot.posts.data.posts[1].title);
+  assert.equal(deleted.posts.some((post) => post.id === id), false);
+  assert.deepEqual(restoreProject(deleted, id).posts, state.snapshot.posts.data.posts);
+  const unsaved = structuredClone(state.draft.posts.posts[0]); unsaved.id = 'new'; unsaved.slug = 'new';
+  assert.equal(moveToTrash({ ...fixturePosts, posts: [...fixturePosts.posts, unsaved] }, fixturePosts, 'new').trash?.length || 0, 0);
+});
+test('purge deletes only unreferenced managed uploads; shared and original images remain', async () => {
+  const posts = structuredClone(fixturePosts), removed = 'public/images/projects/deleted/unique.png', shared = 'public/images/projects/deleted/shared.png';
+  posts.posts[0].images.push({ path: shared, alt: '' });
+  const archived = structuredClone(posts.posts[1]); archived.id = 'archived'; archived.slug = 'archived';
+  archived.images.push({ path: removed, alt: '' }, { path: shared, alt: '' });
+  posts.trash = [{ project: archived, index: 1, deletedAt: new Date().toISOString() }];
+  const github = new GitFixture(undefined, posts); globalThis.fetch = github.fetch;
+  const snapshot = github.snapshot(), draft = contentDraft(snapshot); draft.posts.trash = [];
+  const original = posts.posts[1].images[0].path;
+  await persistDraft({ snapshot, draft, pending: new Map(), token: 'fixture', checkpoint: async () => {}, planned: async () => {} });
+  assert.equal(github.files()[removed], undefined); assert.ok(github.files()[shared]); assert.ok(github.files()[original]);
+  assert.equal(github.data<PostsData>('data/posts.json').trash!.length, 0);
+});
+test('missing pending images fail validation before any request', async () => {
+  const state = setup(); state.draft.site.media!.logo = 'pending:missing';
+  await assert.rejects(state.save(), /không hợp lệ/); assert.equal(state.github.calls.length, 0);
+});
+test('a prepared but unpublished commit survives restart and publishes the same image once', async () => {
+  const state = setup(); state.pending.set('pending:photo', photo());
+  state.draft.posts.posts[0].images.push({ path: 'pending:photo', alt: '' });
+  let plan: SavePlan | undefined;
+  await assert.rejects(persistDraft({ snapshot: state.snapshot, draft: state.draft, pending: state.pending, token: 'fixture', checkpoint: async () => {},
+    planned: async (next) => { plan = structuredClone(next); state.github.offline = true; },
+  }), GitHubError);
+  assert.ok(plan); assert.equal(state.github.head, state.snapshot.head);
+  const commits = state.github.commits.size; state.github.offline = false;
+  const result = await persistDraft({ snapshot: state.snapshot, draft: state.draft, pending: new Map(), token: 'fixture', plan, checkpoint: async () => {}, planned: async () => assert.fail('Reuse the durable plan') });
+  assert.equal(result.snapshot.head, plan.commit); assert.equal(state.github.commits.size, commits);
+  assert.ok(state.github.files()[result.draft.posts.posts[0].images.at(-1)!.path]);
+});
+test('reconciling an acknowledged ancestor shows newer admin changes rather than stale data', async () => {
+  const state = setup(); state.draft.site.company.name = 'Earlier save'; await state.save();
+  const newer = contentDraft(state.plan!.snapshot); newer.site.company.name = 'Later admin save'; state.github.external(newer.site);
+  const result = await state.save();
+  assert.equal(result.draft.site.company.name, 'Later admin save');
+  assert.equal((await readSite()).company.name, 'Later admin save');
+  assert.equal(state.github.calls.filter((call) => call.method === 'PATCH').length, 1);
+});
+test('separate deletes restore the original order regardless of restore order', () => {
+  const original = structuredClone(fixturePosts), [a, b] = original.posts;
+  const first = moveToTrash(original, original, a.id);
+  const deleted = moveToTrash(first, first, b.id);
+  for (const order of [[a.id, b.id], [b.id, a.id]]) {
+    const result = order.reduce(restoreProject, deleted);
+    assert.deepEqual(result.posts.map((post) => post.id), original.posts.map((post) => post.id));
   }
 });
-
-test('site images upload before site JSON, survive a failed save, and are not uploaded again on retry', async () => {
-  let snapshot = initial();
-  let draft = contentDraft(snapshot);
-  const pending = new Map<string, PendingImage>();
-  assert.ok(draft.site.media);
-  for (const key of SITE_IMAGE_KEYS) {
-    const placeholder = `pending:${key}`;
-    draft.site.media[key] = placeholder;
-    pending.set(placeholder, { file: new File(['photo'], `${key}.png`, { type: 'image/png' }), url: `blob:${key}` });
-  }
-  let uploads = 0;
-  let saves = 0;
-  globalThis.fetch = async (input, init) => {
-    const url = String(input);
-    assert.equal(init?.method, 'PUT');
-    if (url.includes('/contents/public/images/projects/site-assets/')) {
-      uploads += 1;
-      return response({ content: { sha: `photo-${uploads}` } }, 201);
+test('all deletion/restoration permutations and permanent purges preserve surviving order', () => {
+  const original = structuredClone(fixturePosts), ids = original.posts.map((post) => post.id);
+  const permutations = (items: string[]): string[][] => !items.length ? [[]] : items.flatMap((id) => permutations(items.filter((item) => item !== id)).map((tail) => [id, ...tail]));
+  for (const deletion of permutations(ids)) for (const restoration of permutations(ids)) {
+    const deleted = deletion.reduce((data, id) => moveToTrash(data, data, id), original);
+    assert.deepEqual(restoration.reduce(restoreProject, deleted).posts.map((post) => post.id), ids);
+    for (const purged of ids) {
+      const restored = restoration.filter((id) => id !== purged).reduce(restoreProject, purgeProject(deleted, purged));
+      assert.deepEqual(restored.posts.map((post) => post.id), ids.filter((id) => id !== purged));
     }
-    assert.ok(url.endsWith('/data/site.json'));
-    const body = JSON.parse(String(init.body));
-    const value = JSON.parse(Buffer.from(body.content, 'base64').toString('utf8'));
-    assert.ok(siteImagePaths(value).every((path) => path.startsWith('public/images/projects/site-assets/')));
-    assert.equal(body.sha, 'site-old');
-    saves += 1;
-    return saves === 1 ? response({}, 409) : response({ content: { sha: 'site-new' } }, 201);
-  };
-  const save = () => persistDraft({ snapshot, draft, pending, token: 'fixture',
-    acknowledge: (next, nextDraft) => { snapshot = next; draft = nextDraft; },
-    uploaded: (placeholder) => { pending.delete(placeholder); },
-  });
-  await assert.rejects(save(), /xung đột/);
-  assert.equal(uploads, 3);
-  assert.equal(pending.size, 0);
-  assert.equal(snapshot.site.sha, 'site-old');
-  assert.ok(siteImagePaths(draft.site).every((path) => path.startsWith('public/images/projects/site-assets/')));
-  const result = await save();
-  assert.equal(result.snapshot.site.sha, 'site-new');
-  assert.equal(uploads, 3);
-  assert.equal(saves, 2);
-});
-
-test('site image removal is valid and malformed media is rejected before writing', async () => {
-  const empty = structuredClone(site);
-  empty.media = { logo: '', hero: '', about: '', logoLayout: 'contain' };
-  assert.deepEqual(siteImagePaths(parseSite(empty)), []);
-  const invalid = structuredClone(empty) as unknown as Record<string, unknown>;
-  invalid.media = { ...empty.media, logoLayout: 'unsafe' };
-  assert.throws(() => parseSite(invalid), /không hợp lệ/);
-  const snapshot = initial();
-  const draft = contentDraft(snapshot);
-  draft.site.media = { logo: 'pending:logo', hero: 'https://example.com/x.png', about: '' };
-  globalThis.fetch = async () => { throw new Error('No writes expected'); };
-  await assert.rejects(persistDraft({ snapshot, draft, pending: new Map([['pending:logo', { file: new File(['photo'], 'logo.png', { type: 'image/png' }), url: 'blob:logo' }]]), token: 'fixture', acknowledge: () => {}, uploaded: () => {} }), /không hợp lệ/);
+  }
 });

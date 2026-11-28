@@ -5,7 +5,7 @@ export function ServiceCards({ editor }: { editor: ContentEditor }) {
   const { data, editing, updateServices } = editor;
   if (!data) return null;
   return <div className="site-services-grid">{data.site.services.map((service, index) => <article className="site-service" key={service.id}>
-    <div className="site-service-top"><Icon name={['bolt', 'water', 'building', 'plus'][index % 4]} size={30} /><span>{String(index + 1).padStart(2, '0')}</span></div>
+    <div className="site-service-top"><Icon name={['bolt', 'water', 'building', 'plus'][index % 4]} size={30} /></div>
     <h3><Field value={service.title} onChange={(title) => updateServices(data.site.services.map((item) => item.id === service.id ? { ...item, title } : item))} editing={editing} label="Tên dịch vụ" /></h3>
     <Field value={service.description} onChange={(description) => updateServices(data.site.services.map((item) => item.id === service.id ? { ...item, description } : item))} editing={editing} label="Mô tả dịch vụ" multiline />
     <a href="#/contact" className="site-text-link">Trao đổi về hạng mục <Icon name="arrow" size={17} /></a>

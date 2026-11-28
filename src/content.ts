@@ -19,6 +19,7 @@ export interface Project {
 export interface PostsData {
   schemaVersion: 1;
   posts: Project[];
+  trash?: { project: Project; deletedAt: string; index: number }[];
 }
 
 export interface SiteData {
@@ -48,6 +49,20 @@ export function siteImagePaths(site: SiteData) {
   return SITE_IMAGE_KEYS.map((key) => site.media?.[key]).filter((path): path is string => !!path);
 }
 
+export function postImagePaths(posts: PostsData) {
+  return [...posts.posts, ...(posts.trash || []).map((item) => item.project)]
+    .flatMap((post) => post.images.map((image) => image.path));
+}
+
+// Position in the full list, including archived posts, so repeated deletes do not shift restoration order.
+export function projectPosition(data: PostsData, visibleIndex: number) {
+  let position = visibleIndex;
+  for (const item of [...(data.trash || [])].sort((a, b) => a.index - b.index)) {
+    if (item.index <= position) position += 1;
+  }
+  return position;
+}
+
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -72,7 +87,13 @@ export function parsePosts(value: unknown): PostsData {
   }
   const ids = new Set<string>();
   const slugs = new Set<string>();
-  for (const post of value.posts) {
+  const trash = value.trash;
+  if (trash !== undefined && (!Array.isArray(trash) || !trash.every((item: unknown) => record(item)
+    && typeof item.deletedAt === 'string' && Number.isFinite(Date.parse(item.deletedAt))
+    && Number.isInteger(item.index) && (item.index as number) >= 0 && record(item.project)))) {
+    throw new Error('Dữ liệu thùng rác không hợp lệ.');
+  }
+  for (const post of [...value.posts, ...((trash || []) as { project: unknown }[]).map((item) => item.project)]) {
     if (!record(post)
       || !strings(post, ['id', 'slug', 'title', 'summary', 'content', 'createdAt', 'updatedAt'])
       || !/^[a-zA-Z0-9_-]+$/.test(post.id as string)

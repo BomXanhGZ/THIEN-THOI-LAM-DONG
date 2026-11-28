@@ -18,11 +18,11 @@ export default function Home({ editor }: { editor: ContentEditor }) {
         <div className="site-hero-actions"><a href="#/projects" className="site-button site-button-orange">Khám phá công trình <Icon name="arrow" /></a><a href="#/contact" className="site-hero-secondary">Liên hệ với chúng tôi <span>↗</span></a></div>
       </div>
     </section>
-    <div className="site-discipline"><div className="site-container">{['Thi công điện', 'Thi công nước', 'Thi công xây dựng'].map((label, index) => <span key={label}><Icon name={['bolt', 'water', 'building'][index]} />{label}<small>0{index + 1}</small></span>)}</div></div>
+    <div className="site-discipline"><div className="site-container">{['Thi công điện', 'Thi công nước', 'Thi công xây dựng'].map((label, index) => <span key={label}><Icon name={['bolt', 'water', 'building'][index]} />{label}</span>)}</div></div>
     <section className="site-container site-section"><SectionTitle eyebrow="LĨNH VỰC HOẠT ĐỘNG" title="Các hạng mục thi công"><a href="#/services" className="site-text-link">Tất cả dịch vụ <Icon name="arrow" /></a></SectionTitle><ServiceCards editor={editor} /></section>
     <section className="site-about-section"><div className="site-container site-section"><AboutContent editor={editor} /></div></section>
     <section className="site-container site-section"><SectionTitle eyebrow="DỰ ÁN & CÔNG TRÌNH" title="Hình ảnh từ công trình"><a href="#/projects" className="site-text-link">Xem tất cả dự án <Icon name="arrow" /></a></SectionTitle>
-      {featured.length ? <div className="site-project-grid">{featured.map((project, index) => <ProjectCard key={project.id} project={project} index={index} imageSrc={imageSrc} />)}</div> : <p className="site-muted">Các công trình tiêu biểu sẽ được cập nhật tại đây.</p>}
+      {featured.length ? <div className="site-project-grid">{featured.map((project) => <ProjectCard key={project.id} project={project} imageSrc={imageSrc} />)}</div> : <p className="site-muted">Các công trình tiêu biểu sẽ được cập nhật tại đây.</p>}
     </section>
   </>;
 }

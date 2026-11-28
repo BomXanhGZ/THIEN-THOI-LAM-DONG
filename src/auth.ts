@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { clearContentCache, validateAdminToken } from './github.ts';
+import { clearAdminCache, validateAdminToken } from './github.ts';
 
 interface AdminSession {
   login: string;
@@ -22,7 +22,7 @@ export async function loginAdmin(input: string) {
   if (revision !== currentRevision) throw new Error('Phiên đăng nhập đã bị hủy.');
   token = candidate;
   session = verified;
-  clearContentCache();
+  clearAdminCache();
   notify();
 }
 
@@ -30,7 +30,7 @@ export function logoutAdmin() {
   revision += 1;
   token = null;
   session = null;
-  clearContentCache();
+  clearAdminCache();
   notify();
 }
 

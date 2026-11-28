@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { SiteData } from '../content.ts';
 import { Icon, phoneHref } from './Website.tsx';
 
-export const navigation = [['/', 'Trang chủ'], ['/about', 'Giới thiệu'], ['/services', 'Dịch vụ'], ['/projects', 'Dự án'], ['/contact', 'Liên hệ']];
+const navigation = [['/', 'Trang chủ'], ['/about', 'Giới thiệu'], ['/services', 'Dịch vụ'], ['/projects', 'Dự án'], ['/contact', 'Liên hệ']];
 
 export default function Header({ site, path, imageSrc }: { site: SiteData; path: string; imageSrc: (path: string) => string }) {
   const [menu, setMenu] = useState(false);

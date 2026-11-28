@@ -4,9 +4,9 @@ import { readFile } from 'node:fs/promises';
 import { parsePosts, parseSite } from '../src/content.ts';
 import type { Project } from '../src/content.ts';
 import {
-  clearContentCache, deleteProjectImage, GitHubError, ImageUploadError,
-  projectImageUrl, readPosts, readSite, savePosts, saveSite,
-  uploadProjectImages, validateAdminToken,
+  clearContentCache, acceptPublishedContent, GitHubError,
+  projectImageUrl, readPosts, readSite, readPostsForAdmin, readSiteForAdmin,
+  imageUploadPath, validateImageFiles, gitRequest, validateAdminToken,
 } from '../src/github.ts';
 import { getAdminToken, loginAdmin, logoutAdmin } from '../src/auth.ts';
 
@@ -43,67 +43,163 @@ test('tracked data matches schema; 30 projects and many images are supported', a
   assert.throws(() => parsePosts({ schemaVersion: 1, posts: [{ ...many[0], images: [{ path: 'https://example.com/a.jpg', alt: '' }] }] }), /không hợp lệ/);
 });
 
-test('public JSON reads decode UTF-8, cache clones, and revalidate with ETag', async () => {
+test('public JSON uses raw without credentials, caches UTF-8 clones and only busts cache on explicit refresh', async () => {
   let calls = 0;
   const urls: string[] = [];
   const value = { ...site, company: { ...site.company, name: 'THIEN-THOI-LAM-DONG — Điện nước 日本語' } };
   globalThis.fetch = async (input, init) => {
     calls += 1;
     const url = new URL(String(input));
-    assert.match(url.pathname, /\/contents\/data\/site.json$/);
-    assert.equal(url.searchParams.get('ref'), 'main');
-    assert.match(url.searchParams.get('cache_bust') || '', /^[a-f0-9-]{36}$/);
+    assert.equal(url.origin, 'https://raw.githubusercontent.com');
+    assert.match(url.pathname, /\/main\/data\/site.json$/);
+    assert.equal(url.search, calls === 1 ? '' : `?refresh=${url.searchParams.get('refresh')}`);
     urls.push(url.href);
-    assert.equal(init?.cache, 'no-store');
+    assert.equal(init?.cache, calls === 1 ? 'no-cache' : 'reload');
+    assert.equal(init?.credentials, 'omit');
     const headers = new Headers(init?.headers);
     assert.equal(headers.has('Authorization'), false);
-    if (calls === 2) {
-      assert.equal(headers.get('If-None-Match'), '"revision-1"');
-      return new Response(null, { status: 304 });
-    }
-    return fileResponse(value);
+    assert.equal(headers.has('If-None-Match'), false);
+    return json(value);
   };
   const first = await readSite();
-  assert.equal(first.data.company.name, value.company.name);
-  first.data.company.name = 'mutated draft';
-  assert.equal((await readSite()).data.company.name, value.company.name);
+  assert.equal(first.company.name, value.company.name);
+  first.company.name = 'mutated draft';
+  assert.equal((await readSite()).company.name, value.company.name);
   assert.equal(calls, 1);
-  assert.equal((await readSite(true)).sha, 'read-sha');
+  assert.equal((await readSite(true)).company.name, value.company.name);
   assert.equal(calls, 2);
   assert.notEqual(urls[0], urls[1]);
 });
 
-test('save uses the loaded SHA and branch, encodes UTF-8, then invalidates cache', async () => {
-  let reads = 0;
-  globalThis.fetch = async (_input, init) => {
-    if (init?.method === 'PUT') {
-      const body = JSON.parse(String(init.body));
-      assert.equal(body.sha, 'read-sha');
-      assert.equal(body.branch, 'main');
-      assert.equal(new Headers(init.headers).get('Authorization'), `Bearer ${testToken}`);
-      assert.deepEqual(JSON.parse(Buffer.from(body.content, 'base64').toString('utf8')), site);
-      return json({ content: { sha: 'saved-sha' } }, 201);
-    }
-    reads += 1;
-    return fileResponse(site);
-  };
-  await readSite();
-  assert.equal((await saveSite(site, 'read-sha', testToken)).sha, 'saved-sha');
-  await readSite();
-  assert.equal(reads, 2);
+test('acknowledged publication populates both public caches without another request', async () => {
+  globalThis.fetch = async () => { throw new Error('Cache should satisfy read'); };
+  acceptPublishedContent({ data: site, sha: 'site-new' }, { data: posts, sha: 'posts-new' }, 'published-commit');
+  assert.deepEqual(await readSite(), site);
+  assert.deepEqual(await readPosts(), posts);
 });
 
-test('missing token or SHA is rejected before sending any write', async () => {
-  globalThis.fetch = async () => { throw new Error('Must not fetch'); };
-  await assert.rejects(savePosts(posts, '', testToken), /SHA/);
-  await assert.rejects(savePosts(posts, 'old-sha', ''), /đăng nhập/);
-});
-
-test('stale SHA conflicts are surfaced without retrying or overwriting', async () => {
+test('simultaneous public reads share one request and return separate copies', async () => {
+  let resolve!: (response: Response) => void;
   let calls = 0;
-  globalThis.fetch = async () => { calls += 1; return json({}, 409); };
-  await assert.rejects(savePosts(posts, 'stale-sha', testToken), (error: unknown) => error instanceof GitHubError && error.status === 409);
+  globalThis.fetch = async () => { calls += 1; return new Promise<Response>((done) => { resolve = done; }); };
+  const first = readSite();
+  const second = readSite();
   assert.equal(calls, 1);
+  resolve(json(site));
+  const [one, two] = await Promise.all([first, second]);
+  one.company.name = 'Changed copy';
+  assert.equal(two.company.name, site.company.name);
+});
+
+test('a late raw response cannot roll back a completed save or replace its public cache', async () => {
+  let resolve!: (response: Response) => void;
+  const updated = { ...site, company: { ...site.company, name: 'Saved company' } };
+  globalThis.fetch = async () => new Promise<Response>((done) => { resolve = done; });
+  const loading = readSite();
+  acceptPublishedContent({ data: updated, sha: 'new-sha' }, { data: posts, sha: 'posts-sha' }, 'a'.repeat(40));
+  resolve(json(site));
+  assert.deepEqual(await loading, updated);
+  assert.deepEqual(await readSite(), updated);
+});
+
+test('clearing cache prevents an obsolete in-flight request from refilling it', async () => {
+  let resolve!: (response: Response) => void;
+  const updated = { ...site, company: { ...site.company, name: 'Current company' } };
+  globalThis.fetch = async () => new Promise<Response>((done) => { resolve = done; });
+  const obsolete = readSite();
+  clearContentCache();
+  globalThis.fetch = async () => json(updated);
+  await readSite();
+  resolve(json(site));
+  assert.deepEqual(await obsolete, updated);
+  assert.deepEqual(await readSite(), updated);
+});
+
+test('saved commit protects public refresh during CDN propagation, then returns to branch reads', async () => {
+  const originalNow = Date.now;
+  let now = originalNow();
+  Date.now = () => now;
+  const updated = { ...site, company: { ...site.company, name: 'Saved company' } };
+  const commit = 'a'.repeat(40);
+  const urls: string[] = [];
+  try {
+    globalThis.fetch = async (input) => {
+      urls.push(String(input));
+      return json(updated);
+    };
+    acceptPublishedContent({ data: updated, sha: 'new-sha' }, { data: posts, sha: 'posts-sha' }, 'a'.repeat(40));
+    now += 60_001;
+    assert.deepEqual(await readSite(), updated);
+    assert.match(new URL(urls[0]).pathname, new RegExp(`/${commit}/data/site.json$`));
+    assert.equal(new URL(urls[0]).searchParams.get('v'), 'new-sha');
+    now += 300_001;
+    await readSite();
+    assert.match(new URL(urls[1]).pathname, /\/main\/data\/site.json$/);
+  } finally { Date.now = originalNow; }
+});
+
+test('admin snapshots require a token, deduplicate concurrent reads, and always refresh the SHA', async () => {
+  globalThis.fetch = async () => { throw new Error('Must not call GitHub without a token'); };
+  await assert.rejects(readSiteForAdmin(''), /đăng nhập/);
+  await assert.rejects(readPostsForAdmin(''), /đăng nhập/);
+  let calls = 0;
+  globalThis.fetch = async (input, init) => {
+    calls += 1;
+    const url = new URL(String(input));
+    assert.equal(url.origin, 'https://api.github.com');
+    assert.equal(url.searchParams.get('ref'), 'main');
+    assert.equal(new Headers(init?.headers).get('Authorization'), `Bearer ${testToken}`);
+    assert.equal(init?.cache, 'no-store');
+    return fileResponse(site, `sha-${calls}`);
+  };
+  const [one, two] = await Promise.all([readSiteForAdmin(testToken), readSiteForAdmin(testToken)]);
+  assert.equal(calls, 1);
+  assert.equal(one.sha, two.sha);
+  one.data.company.name = 'Changed copy';
+  assert.equal(two.data.company.name, site.company.name);
+  assert.equal((await readSiteForAdmin(testToken)).sha, 'sha-2');
+  assert.equal(calls, 2);
+});
+
+test('logout preserves acknowledged public content while removing the admin credential', async () => {
+  acceptPublishedContent({ data: site, sha: 'new-sha' }, { data: posts, sha: 'posts-sha' }, 'b'.repeat(40));
+  logoutAdmin();
+  globalThis.fetch = async () => { throw new Error('Published content should already be cached'); };
+  assert.deepEqual(await readSite(), site);
+  assert.throws(getAdminToken, /đăng nhập/);
+});
+
+test('a temporarily unavailable saved raw commit keeps acknowledged data, but does not mask errors forever', async () => {
+  const originalNow = Date.now;
+  let now = originalNow();
+  Date.now = () => now;
+  try {
+    acceptPublishedContent({ data: site, sha: 'new-sha' }, { data: posts, sha: 'posts-sha' }, 'b'.repeat(40));
+    globalThis.fetch = async () => json({}, 404);
+    assert.deepEqual(await readSite(true), site);
+    now += 300_001;
+    await assert.rejects(readSite(true), (error: unknown) => error instanceof GitHubError && error.status === 404);
+  } finally { Date.now = originalNow; }
+});
+
+test('an admin read completed after logout cannot refill the public cache with an obsolete snapshot', async () => {
+  let resolve!: (response: Response) => void;
+  globalThis.fetch = async () => new Promise<Response>((done) => { resolve = done; });
+  const oldRead = readSiteForAdmin(testToken);
+  logoutAdmin();
+  resolve(fileResponse(site));
+  await oldRead;
+  const current = { ...site, company: { ...site.company, name: 'Current public company' } };
+  globalThis.fetch = async (input) => {
+    assert.equal(new URL(String(input)).origin, 'https://raw.githubusercontent.com');
+    return json(current);
+  };
+  assert.deepEqual(await readSite(), current);
+});
+
+test('Git Data requests require token before any network request', async () => {
+  globalThis.fetch = async () => { throw new Error('Must not fetch'); };
+  await assert.rejects(gitRequest('/git/trees', '', 'POST', {}), /đăng nhập/);
 });
 
 test('rate limits, denied access, expired tokens, invalid JSON and network errors are explicit', async () => {
@@ -115,9 +211,9 @@ test('rate limits, denied access, expired tokens, invalid JSON and network error
   await assert.rejects(readPosts(true), /giới hạn/);
   globalThis.fetch = async () => { throw new TypeError('Network error'); };
   await assert.rejects(readPosts(true), /kết nối/);
-  globalThis.fetch = async () => json({ type: 'file', encoding: 'base64', content: btoa('{broken'), sha: 'sha' });
+  globalThis.fetch = async () => new Response('{broken');
   await assert.rejects(readPosts(true), /JSON UTF-8/);
-  globalThis.fetch = async () => fileResponse({ schemaVersion: 99, posts: [] });
+  globalThis.fetch = async () => json({ schemaVersion: 99, posts: [] });
   await assert.rejects(readPosts(true), /không hợp lệ/);
 });
 
@@ -176,52 +272,12 @@ test('logout during token validation prevents a late login from restoring the se
   assert.throws(getAdminToken, /đăng nhập/);
 });
 
-test('uploads use unique raw GitHub image paths and sequential writes', async () => {
-  let inFlight = 0;
-  const paths: string[] = [];
-  globalThis.fetch = async (input, init) => {
-    inFlight += 1;
-    assert.equal(inFlight, 1);
-    assert.equal(init?.method, 'PUT');
-    const body = JSON.parse(String(init?.body));
-    assert.equal(body.sha, undefined);
-    assert.equal(body.branch, 'main');
-    paths.push(String(input));
-    await Promise.resolve();
-    inFlight -= 1;
-    return json({ content: { sha: `sha-${paths.length}` } }, 201);
-  };
-  const files = [new File(['image-1'], 'a.jpg', { type: 'image/jpeg' }), new File(['image-2'], 'b.webp', { type: 'image/webp' })];
-  const uploaded = await uploadProjectImages('project-1', files, testToken);
-  assert.equal(uploaded.length, 2);
-  assert.notEqual(uploaded[0].path, uploaded[1].path);
-  const url = projectImageUrl(uploaded[0].path);
-  assert.match(url, /^https:\/\/raw\.githubusercontent\.com\/BomXanhGZ\/THIEN-THOI-LAM-DONG\/main\/public\/images\/projects\/project-1\//);
-  assert.throws(() => projectImageUrl('public/images/projects/../secret.jpg'), /không hợp lệ/);
-});
-
-test('invalid image selection is rejected before uploading; partial success is recoverable', async () => {
-  let calls = 0;
-  globalThis.fetch = async () => {
-    calls += 1;
-    return calls === 1 ? json({ content: { sha: 'uploaded-sha' } }, 201) : json({}, 403);
-  };
+test('image paths are unique, raw and validated before publication', () => {
   const image = new File(['image'], 'a.jpg', { type: 'image/jpeg' });
-  await assert.rejects(uploadProjectImages('project-1', [image, new File(['svg'], 'b.svg', { type: 'image/svg+xml' })], testToken), /JPEG/);
-  assert.equal(calls, 0);
-  await assert.rejects(uploadProjectImages('project-1', [image, image], testToken), (error: unknown) => error instanceof ImageUploadError && error.uploaded.length === 1 && error.uploaded[0].sha === 'uploaded-sha');
-});
-
-test('image deletion is limited to project images and uses the supplied SHA', async () => {
-  let calls = 0;
-  globalThis.fetch = async (_input, init) => {
-    calls += 1;
-    assert.equal(init?.method, 'DELETE');
-    assert.equal(JSON.parse(String(init?.body)).sha, 'image-sha');
-    return json({});
-  };
-  await assert.rejects(deleteProjectImage({ path: 'data/posts.json', sha: 'sha' }, testToken), /không hợp lệ/);
-  assert.equal(calls, 0);
-  await deleteProjectImage({ path: 'public/images/projects/project-1/1.webp', sha: 'image-sha' }, testToken);
-  assert.equal(calls, 1);
+  const first = imageUploadPath('project-1', image), second = imageUploadPath('project-1', image);
+  assert.notEqual(first, second);
+  assert.match(projectImageUrl(first), /^https:\/\/raw\.githubusercontent\.com\/BomXanhGZ\/THIEN-THOI-LAM-DONG\/main\/public\/images\/projects\/project-1\//);
+  assert.throws(() => projectImageUrl('public/images/projects/../secret.jpg'), /không hợp lệ/);
+  assert.throws(() => imageUploadPath('../invalid', image), /không hợp lệ/);
+  assert.throws(() => validateImageFiles([image, new File(['svg'], 'b.svg', { type: 'image/svg+xml' })]), /JPEG/);
 });

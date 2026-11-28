@@ -11,10 +11,12 @@ import Projects from './pages/Projects.tsx';
 import ProjectDetail from './pages/ProjectDetail.tsx';
 import Contact from './pages/Contact.tsx';
 import AdminLogin from './pages/AdminLogin.tsx';
+import Trash from './pages/Trash.tsx';
+import EditorRecovery from './components/EditorRecovery.tsx';
 import './site.css';
 
 function currentPath() { return window.location.hash.slice(1).replace(/\/$/, '') || '/'; }
-interface Confirmation { title: string; text: string; confirm: string; action: () => void | Promise<void> }
+interface Confirmation { title: string; text: string; confirm: string; action: () => unknown }
 
 export default function App() {
   const editor = useContentEditor();
@@ -36,9 +38,12 @@ export default function App() {
     if (dirty) setConfirmation({ title: 'Bỏ các thay đổi chưa lưu?', text: 'Bản nháp hiện tại sẽ được bỏ. Các nội dung đã Save vẫn được giữ nguyên.', confirm: 'Bỏ thay đổi', action: editor.discard });
     else void editor.discard();
   }
-  async function signOut() { if (editing) await editor.discard(); logoutAdmin(); }
+  async function signOut() {
+    if (editing && !(dirty || editor.uncertain ? await editor.stash() : await editor.discard())) return;
+    logoutAdmin();
+  }
   function requestLogout() {
-    if (dirty) setConfirmation({ title: 'Đăng xuất khi chưa lưu?', text: 'Các thay đổi chưa Save sẽ bị bỏ khi bạn đăng xuất.', confirm: 'Bỏ thay đổi và đăng xuất', action: signOut });
+    if (dirty || editor.uncertain) setConfirmation({ title: 'Giữ bản nháp và đăng xuất?', text: 'Bản nháp và ảnh đã chọn được giữ trên máy. Đăng nhập lại để khôi phục; token không được lưu.', confirm: 'Giữ nháp và đăng xuất', action: signOut });
     else void signOut();
   }
   const activeProject = data?.posts.posts.find((project) => path === `/projects/${project.slug}`);
@@ -51,20 +56,22 @@ export default function App() {
     case '/services': page = <Services editor={editor} />; break;
     case '/projects': page = <Projects editor={editor} />; break;
     case '/contact': page = <Contact editor={editor} />; break;
+    case '/trash': page = <Trash editor={editor} onPurge={(id) => setConfirmation({ title: 'Xóa vĩnh viễn bài này?', text: 'Sau Save, bài sẽ được bỏ khỏi Thùng rác và ảnh upload không còn được sử dụng sẽ được dọn. Lịch sử GitHub vẫn lưu phiên bản cũ.', confirm: 'Xóa vĩnh viễn', action: () => editor.purgePost(id) })} />; break;
     default: page = path.startsWith('/projects/') ? <ProjectDetail project={activeProject} editor={editor} onDelete={() => {
-      if (activeProject) setConfirmation({ title: 'Xóa dự án này?', text: 'Dự án được bỏ khỏi bản nháp và chỉ xóa khỏi website khi Save. Ảnh gốc không bị xóa.', confirm: 'Xóa khỏi bản nháp', action: () => editor.removeProject(activeProject.id) });
+      if (activeProject) setConfirmation({ title: 'Chuyển dự án vào Thùng rác?', text: 'Sau Save, dự án ngừng hiển thị. Bạn có thể khôi phục bài và ảnh từ Thùng rác.', confirm: 'Chuyển vào Thùng rác', action: () => editor.removeProject(activeProject.id) });
     }} /> : <section className="site-container site-section"><h1>Không tìm thấy trang</h1><a href="#/" className="site-text-link">Về trang chủ</a></section>;
   }
   return <div className={`site ${admin ? 'site-admin' : ''} ${editing ? 'site-editing' : ''}`}>
     <a className="site-skip" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>Đến nội dung chính</a>
     {data && <Header site={data.site} path={path} imageSrc={editor.imageSrc} />}
     {editor.error && <div className="site-container site-error" role="alert">{editor.error}{!editing && <button disabled={editor.loading} onClick={() => { void editor.refresh(true); }}>Thử tải lại</button>}</div>}
-    <main id="main-content" tabIndex={-1}><fieldset className="site-content" disabled={busy} aria-busy={busy}>{page}</fieldset></main>
+    {admin && <EditorRecovery editor={editor} onDiscard={(record) => setConfirmation({ title: 'Bỏ bản nháp trên máy?', text: 'Bản nháp chưa công bố và ảnh đã chọn sẽ bị bỏ. Lần lưu chưa rõ kết quả phải được xác minh trước.', confirm: 'Bỏ bản nháp', action: () => editor.dismissRecovery(record) })} />}
+    <main id="main-content" tabIndex={-1}><fieldset className="site-content" disabled={busy || editor.uncertain || !!editor.conflicts.length} aria-busy={busy}>{page}</fieldset></main>
     {data && <Footer site={data.site} />}
     {admin && <div className="site-editor" role="region" aria-label="Công cụ chỉnh sửa"><div className="site-editor-info"><span className="site-editor-dot" /><div><strong>{busy ? 'Đang xử lý…' : editing ? 'Đang chỉnh sửa' : `Quản trị: ${admin.login}`}<span>{editing && dirty ? ' · Chưa lưu' : ''}</span></strong><small>{editing ? 'Nhấn Save để lưu nội dung lên website' : 'Chỉnh sửa trực tiếp nội dung trên trang'}</small></div></div>
-      <div className="site-editor-actions">{editing ? <><button disabled={busy} onClick={discard} className="site-editor-cancel">Cancel</button><button disabled={busy || !dirty} onClick={() => { void editor.save(); }} className="site-button site-button-orange"><Icon name="check" size={17} /> {busy ? 'Đang lưu…' : 'Save'}</button><button disabled={busy} aria-label="Exit Edit Mode" title="Exit Edit Mode" onClick={discard} className="site-editor-exit"><Icon name="close" /></button></>
-        : <><button disabled={busy} onClick={() => { void editor.enterEdit(); }} className="site-button site-button-dark"><Icon name="edit" size={17} /> Edit</button><button disabled={busy} onClick={requestLogout} className="site-editor-cancel">Đăng xuất</button></>}
-        {editor.orphanCount > 0 && <button disabled={busy} onClick={() => { void editor.cleanOrphans(); }} className="site-editor-cancel">Dọn ảnh chưa dùng ({editor.orphanCount})</button>}
+      <div className="site-editor-actions">{editing ? <><a className="site-editor-cancel" href="#/trash">Thùng rác</a><button disabled={busy} onClick={discard} className="site-editor-cancel">Cancel</button><button disabled={busy || (!dirty && !editor.uncertain) || !!editor.conflicts.length} onClick={() => { void editor.save(); }} className="site-button site-button-orange"><Icon name="check" size={17} /> {busy ? 'Đang lưu…' : editor.uncertain ? 'Kiểm tra lần lưu' : 'Save'}</button><button disabled={busy} aria-label="Exit Edit Mode" title="Exit Edit Mode" onClick={discard} className="site-editor-exit"><Icon name="close" /></button></>
+        : <button disabled={busy} onClick={() => { void editor.enterEdit(); }} className="site-button site-button-dark"><Icon name="edit" size={17} /> Edit</button>}
+        <button disabled={busy} onClick={requestLogout} className="site-editor-cancel">Đăng xuất</button>
       </div></div>}
     {editor.message && <div className="site-toast is-visible" role="status"><span>{editor.message}</span><button onClick={editor.clearMessage} aria-label="Đóng thông báo"><Icon name="close" size={16} /></button></div>}
     <dialog className="site-dialog" ref={dialog} onCancel={() => setConfirmation(null)}><h2>{confirmation?.title}</h2><p>{confirmation?.text}</p><div><button className="site-button site-button-outline" onClick={() => setConfirmation(null)}>Quay lại</button><button className="site-button site-button-dark" onClick={() => { const action = confirmation?.action; setConfirmation(null); void action?.(); }}>{confirmation?.confirm}</button></div></dialog>

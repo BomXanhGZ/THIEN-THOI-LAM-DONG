@@ -6,6 +6,7 @@ const paths: Record<string, string> = {
   building: 'M4 21V4h11v17M15 10h5v11M2 21h20M8 8h3M8 12h3M8 16h3',
   edit: 'm16 3 5 5-12 12-6 1 1-6L16 3Zm-2 2 5 5', plus: 'M12 4v16M4 12h16',
   upload: 'M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5', check: 'm5 12 4 4L19 6',
+  message: 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-1 2v-6.5A8.5 8.5 0 1 1 21 11.5ZM7 14l4-4 3 3 3-4',
 };
 
 export function Icon({ name, size = 20 }: { name: string; size?: number }) {

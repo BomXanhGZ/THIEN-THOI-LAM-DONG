@@ -9,7 +9,7 @@ export default function Footer({ site }: { site: SiteData }) {
       <div><a href="#/" className="site-brand">{company.name}</a><p>{company.legalName}<br />{company.description}</p></div>
       <div><h3>Thông tin liên hệ</h3><a href={phoneHref(company.phone)}>{company.phone}</a>
         {company.phoneSecondary && <a href={phoneHref(company.phoneSecondary)}>{company.phoneSecondary}</a>}
-        <p>{company.address}</p>
+        <p><a href="https://maps.app.goo.gl/DQMJ5keA2t5yMw356" target="_blank" rel="noopener noreferrer">{company.address}</a></p>
         {company.fanpage && (company.fanpageUrl ? <a href={company.fanpageUrl} target="_blank" rel="noreferrer">Fanpage: {company.fanpage}</a> : <p>Fanpage: {company.fanpage}</p>)}
       </div>
     </div><div className="site-footer-bottom"><span>© {new Date().getFullYear()} {company.name}</span><a href="#/admin">Đăng nhập quản trị</a></div></div></footer>
